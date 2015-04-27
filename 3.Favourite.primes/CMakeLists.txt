@@ -18,8 +18,8 @@ include_directories(xz-embedded/userspace/
                     xz-embedded/linux/include/linux/
                     xz-embedded/linux/lib/xz/
                     )
-add_executable (Tuenti_Challenge_3 main.cpp ${SRCS} ${datafiles})
-set_property(TARGET Tuenti_Challenge_3 PROPERTY CXX_STANDARD 11)
+add_executable (3_Favourite_primes main.cpp ${SRCS} ${datafiles})
+set_property(TARGET 3_Favourite_primes PROPERTY CXX_STANDARD 11)
 
 # Copy datafiles - and numbers.txt.xz
 file(GLOB datafiles "*.sql")
