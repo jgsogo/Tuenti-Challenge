@@ -5,7 +5,7 @@
 #include <cstdint>
 
 // Compute buffer based on spots available.
-uint32_t compute_buffer(const uint32_t& case_i) {
+std::size_t compute_buffer(const std::size_t& case_i) {
     return (case_i >> 1) + (case_i & 1);    // division by 2 (+1 if odd number).
 }
 
@@ -19,7 +19,7 @@ int main (int argc, char *argv[]) {
     if (!file.is_open()) {
         return -1;
     }
-    uint32_t n_cases, case_i;   // Possible values according to the challenge: 1 <= N <= 2^32-1
+    std::size_t n_cases, case_i;   // Possible values according to the challenge: 1 <= N <= 2^32-1
                                 //  we don't expect more that 2^32 cases.
     file >> n_cases;
     std::ofstream ofs ("output.txt", std::ofstream::out);
