@@ -1,0 +1,3 @@
+[submodule "3.Favourite.primes/xz-embedded"]
+	path = 3.Favourite.primes/xz-embedded
+	url = http://git.tukaani.org/xz-embedded.git
