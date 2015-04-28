@@ -39,27 +39,12 @@ std::vector<std::size_t> compute_prime_numbers(const std::size_t& n) {
 // Count factors for large number. Returns true if the rest is 1 (completely factorized).
 bool count_factors(const boost::multiprecision::cpp_int& number, const std::vector<std::size_t>& factors, std::map<std::size_t, std::size_t>& count) {
     boost::multiprecision::cpp_int rest = number;
-    /*// Basic implementation    
     for (auto it = factors.rbegin(); it!=factors.rend(); ++it) {
         while(0== boost::multiprecision::integer_modulus(rest, *it)) {
             rest = rest/ *it;
             count[*it] += 1;
             }
-        }
-    */
-    // Improved implementation (less divisions)
-    while(rest != 1) {
-        std::size_t divisor = 1;
-        for (auto it = factors.rbegin(); it!=factors.rend(); ++it) {
-            if(0== boost::multiprecision::integer_modulus(rest, *it)) {
-                divisor = divisor * (*it);
-                count[*it] += 1;
-                }            
-            }
-        assert(0== boost::multiprecision::integer_modulus(rest, divisor));
-        rest = rest/divisor;
-        }
-    
+        } 
     return rest==1;
     }
 
