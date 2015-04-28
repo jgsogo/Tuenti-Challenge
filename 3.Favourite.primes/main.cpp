@@ -11,8 +11,15 @@
 #include "xz.h"  //! TODO: XZ embedded in project http://tukaani.org/xz/embedded.html
 #include <boost/multiprecision/cpp_int.hpp> // We need really big integers
 
+/* Tuenti Challenge #3: Favourite primes
+*
+*   Implementation on my own, really slow doing factorization :/
+*   We could use a third party library like http://sourceforge.net/projects/msieve/
+*   that implements GNFS (General Number Field Sieve algorithm).
+*/
 
-// Get N first prime numbers
+
+// Get N first prime numbers: will be called once, no need to optimize
 std::vector<std::size_t> compute_prime_numbers(const std::size_t& n) {
     std::vector<std::size_t> primes;
     if (n>=1) {
@@ -31,16 +38,37 @@ std::vector<std::size_t> compute_prime_numbers(const std::size_t& n) {
 
 // Count factors for large number. Returns true if the rest is 1 (completely factorized).
 bool count_factors(const boost::multiprecision::cpp_int& number, const std::vector<std::size_t>& factors, std::map<std::size_t, std::size_t>& count) {
-    boost::multiprecision::cpp_int intpart, rest = number;
+    boost::multiprecision::cpp_int rest = number;
+    /*// Basic implementation    
     for (auto it = factors.rbegin(); it!=factors.rend(); ++it) {
         while(0== boost::multiprecision::integer_modulus(rest, *it)) {
             rest = rest/ *it;
             count[*it] += 1;
             }
         }
+    */
+    // Improved implementation (less divisions)
+    while(rest != 1) {
+        std::size_t divisor = 1;
+        for (auto it = factors.rbegin(); it!=factors.rend(); ++it) {
+            if(0== boost::multiprecision::integer_modulus(rest, *it)) {
+                divisor = divisor * (*it);
+                count[*it] += 1;
+                }            
+            }
+        assert(0== boost::multiprecision::integer_modulus(rest, divisor));
+        rest = rest/divisor;
+        }
+    
     return rest==1;
     }
 
+// 
+void sum_counts(std::map<std::size_t, std::size_t>& accumulator, const std::map<std::size_t, std::size_t>& other) {
+    for (auto it = other.begin(); it!= other.end(); ++it) {
+        accumulator[it->first] += it->second;
+        }
+    }
 
 // Main program: reads input file from argument
 int main (int argc, char *argv[]) {
@@ -71,6 +99,7 @@ int main (int argc, char *argv[]) {
         rock_content.push_back(line);
         max_length = (std::max)(max_length, line.length());
         }
+    std::map<std::size_t, std::map<std::size_t, std::size_t>> rock_precomputed;
 
     // Get the 25 first prime numbers
     std::vector<std::size_t> primes = compute_prime_numbers(25);
@@ -78,17 +107,22 @@ int main (int argc, char *argv[]) {
     // Work over input file
     std::size_t n_cases, start, end;
     file >> n_cases;
+    const clock_t begin_time = clock();
     while(file >> start >> end ) {
         // Count factors for the rock_numbers indicated in the input file
         std::map<std::size_t, std::size_t> counter;
         auto it = rock_content.begin() + start;
         auto it_end = rock_content.begin() + end;
-        for ( ; it!=it_end; ++it) {            
-            boost::multiprecision::cpp_int z(*it); // Create big number
-            auto check = count_factors(z, primes, counter);
-            if (!check) {
-                std::cout << "Number " << z << " is not divisible by factors!" << std::endl;
+        for ( ; it!=it_end; ++it, ++start) {
+            auto inserted = rock_precomputed.insert(std::make_pair(start, std::map<std::size_t, std::size_t>()));
+            if (inserted.second) {
+                boost::multiprecision::cpp_int z(*it); // Create big number
+                auto check = count_factors(z, primes, inserted.first->second);
+                if (!check) {
+                    std::cout << "Number " << z << " is not divisible by factors!" << std::endl;
+                    }
                 }
+            sum_counts(counter, inserted.first->second);
             }
         // Get most common factors and print.
         auto max_count = std::max_element(counter.begin(), counter.end(), [](const std::pair<std::size_t, std::size_t>& lhs, const std::pair<std::size_t, std::size_t>& rhs){ return lhs.second < rhs.second;});
@@ -101,6 +135,6 @@ int main (int argc, char *argv[]) {
         std::cout << std::endl;
         }
 
-
+    //std::cout << float( clock () - begin_time ) /  CLOCKS_PER_SEC;
     return 0;
 } 
