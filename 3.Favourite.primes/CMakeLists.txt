@@ -1,12 +1,6 @@
 
 cmake_minimum_required (VERSION 2.8.11)
 
-# Need Boost for multipreccission integers
-set(BOOST_ROOT ${BOOST_ROOT} CACHE PATH "Path to boost on the system" )
-find_package(Boost REQUIRED)
-set( Boost_INCLUDE_DIRS ${BOOST_ROOT} CACHE INTERNAL "Internal")
-set( Boost_LIBRARY_DIR ${BOOST_ROOT}/stage/lib CACHE INTERNAL "Internal")
-
 # Copy xz-embedded to
 set(SRCS    xz-embedded/linux/include/linux/xz.h
             xz-embedded/linux/lib/xz/xz_crc32.c

@@ -9,6 +9,8 @@
 #include <bitset>
 #include <sstream>
 #include <numeric>
+#include <map>
+#include <boost/multiprecision/cpp_int.hpp> // We need really big integers
 
 /* Tuenti Challenge #4: A Bitter Dinner
 *
@@ -20,53 +22,29 @@ static const std::string base64_chars =
              "abcdefghijklmnopqrstuvwxyz"
              "0123456789+/";
 
-static inline bool is_base64(unsigned char c) {
-  return (isalnum(c) || (c == '+') || (c == '/'));
-}
-
-std::string base64_decode(std::string const& encoded_string) {
-  int in_len = encoded_string.size();
-  int i = 0;
-  int j = 0;
-  int in_ = 0;
-  unsigned char char_array_4[4], char_array_3[3];
-  std::string ret;
-
-  while (in_len-- && ( encoded_string[in_] != '=') && is_base64(encoded_string[in_])) {
-    char_array_4[i++] = encoded_string[in_]; in_++;
-    if (i ==4) {
-      for (i = 0; i <4; i++)
-        char_array_4[i] = base64_chars.find(char_array_4[i]);
-
-      char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
-      char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
-      char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
-
-      for (i = 0; (i < 3); i++)
-        ret += char_array_3[i];
-      i = 0;
+std::map<char, std::bitset<6>> build_base64_decoder(const std::string& base64chars) {
+    std::map<char, std::bitset<6>> decoder;
+    for(std::size_t i = 0; i<base64chars.length(); ++i) {
+        decoder.insert(std::make_pair(base64chars[i], i));
+        }
+    return decoder;
     }
-  }
 
-  if (i) {
-    for (j = i; j <4; j++)
-      char_array_4[j] = 0;
+std::vector<bool> base64_decode(const std::string& encoded_string) {
+    std::vector<bool> bitstring;
+    std::map<char, std::bitset<6>> decode_map = build_base64_decoder(base64_chars);
+    std::size_t in_len = encoded_string.size();
+    std::size_t in_ = 0;
+    while(in_len-- && ( encoded_string[in_] != '=')) {
+        auto bits = decode_map[encoded_string[in_]]; in_++;
+        for (std::size_t i=bits.size(); i>0; --i) {
+            bitstring.push_back(bits.at(i-1));
+            }
+        }
+    return bitstring;
+    }
 
-    for (j = 0; j <4; j++)
-      char_array_4[j] = base64_chars.find(char_array_4[j]);
-
-    char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
-    char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
-    char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
-
-    for (j = 0; (j < i - 1); j++) ret += char_array_3[j];
-  }
-
-  return ret;
-}
-// End of Base64: snippet from http://www.adp-gmbh.ch/cpp/common/base64.html
-
-
+// Read length, xxx-endian and reverse from input case description
 void interpret_case(const std::string& line, std::size_t& nbits, bool& little_endian, bool& reverse) {
     // Reverse
     reverse = false;
@@ -82,15 +60,36 @@ void interpret_case(const std::string& line, std::size_t& nbits, bool& little_en
     nbits = stoi(line.substr(0, line.length() - (reverse?1:0)));
     }
 
-long work_case(const std::vector<bool>& bits, std::size_t& position, const std::string& line) {
+// Build integer for eager CPU
+boost::multiprecision::cpp_int work_case(const std::vector<bool>& bits, std::size_t& position, const std::string& line) {
     std::size_t nbits;
     bool reverse = false;
     bool little_endian = false;
     interpret_case(line, nbits, little_endian, reverse);
 
     // Build integer
+    boost::multiprecision::cpp_int ret(0);
     std::vector<bool> data(bits.begin() + position, bits.begin() + position + nbits);
-    long ret = std::accumulate(data.rbegin(), data.rend(), 0, [](long x, long y){return (x<<1) + y;});
+
+    if (!little_endian && reverse) {
+        //  - BR
+        for (auto i = position; i<position+nbits; ++i) {
+            if (bits.at(i)) {
+                boost::multiprecision::bit_set(ret, i-position);
+                }
+            }
+        }
+    else if(!little_endian) {
+        for (auto i = position; i<position+nbits; ++i) {
+            if (bits.at(i)) {
+                boost::multiprecision::bit_set(ret, position+nbits-i-1);
+                }
+            }
+        }
+    else {
+        }
+    
+    
     position += nbits;
     return ret;
     }
@@ -115,16 +114,7 @@ int main (int argc, char *argv[]) {
     std::getline(file, line);
     n_cases = std::atoi(line.c_str());
         
-    bitstring = base64_decode(bitstring);
-    std::bitset<8> bits_aux;
-    std::vector<bool> bits;
-    for (auto it=bitstring.begin(); it!=bitstring.end(); ++it) {
-        unsigned char byte = *it;
-        bits_aux = byte;
-        for (std::size_t i=0; i<8; ++i) {
-            bits.push_back(bits_aux.at(i));
-            }        
-        }
+    std::vector<bool> bits = base64_decode(bitstring);
 
     std::size_t position = 0;
     while (file >> line) {
