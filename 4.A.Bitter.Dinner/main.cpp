@@ -53,7 +53,8 @@ void interpret_case(const std::string& line, std::size_t& nbits, bool& little_en
         }
     // Little endian
     little_endian = false;
-    if (line.substr(line.length()-1 - (reverse?1:0)) == "L") {
+    int aaa = line.length()-1 - (reverse?1:0);
+    if (line.substr(line.length()-1 - (reverse?1:0), 1) == "L") {
         little_endian = true;
         }
     // Number of bits
@@ -89,27 +90,51 @@ boost::multiprecision::cpp_int work_case(const std::vector<bool>& bits, std::siz
                 }
             }
         }
-    else {
-        // nbits must be multiple of 8
-        auto zeros = 8 - (nbits % 8);
-        std::vector<bool> data(bits.begin() + position, bits.begin() + position + nbits);
-        data.insert(data.end(), zeros, false);
+    else {  // Little-endian is a little bit more complex to read...
+        if (!reverse) {
+            // nbits must be multiple of 8        
+            std::vector<bool> data(bits.begin() + position, bits.begin() + position + nbits);
+            if (nbits%8!=0) {
+                auto zeros = 8 - (nbits % 8);
+                data.insert(data.end()-(nbits % 8), zeros, false);
+                }
 
-        // go byte by byte
-        auto nbytes = nbits/8;
-        std::size_t byte = 0;
-        for (auto ibyte=0; ibyte<nbytes; ++ibyte) {
-            for (auto ibit=0; ibit<8; ++ibit) {
-                if (data[8*ibyte + 7-ibit]) {
-                    boost::multiprecision::bit_set(ret, 8*ibyte + ibit);
+            // go byte by byte
+            auto nbytes = data.size()/8;
+            std::size_t bit = 0;
+            for (int ibyte=0; ibyte<nbytes; ++ibyte) { // byte iteration
+                for (auto ibit=7; ibit>=0; --ibit) {    // bit iteration
+                    if (data[8*ibyte + ibit]) {
+                        boost::multiprecision::bit_set(ret, bit);
+                        }
+                    ++bit;
                     }
                 }
-            }
-        
-        if (reverse) {
+            assert(data.size()==bit);
             }
         else {
+            // nbits must be multiple of 8
+            std::vector<bool> data(bits.begin() + position, bits.begin() + position + nbits);
+            std::reverse(data.begin(), data.end());
+            if (nbits%8!=0) {
+                auto zeros = 8 - (nbits % 8);
+                data.insert(data.end(), zeros, false);
+                }
+
+            // go byte by byte
+            auto nbytes = data.size()/8;
+            std::size_t bit = 0;
+            for (int ibyte=0; ibyte<nbytes; ++ibyte) { // byte iteration
+                for (auto ibit=7; ibit>=0; --ibit) {    // bit iteration
+                    if (data[8*ibyte + ibit]) {
+                        boost::multiprecision::bit_set(ret, bit);
+                        }
+                    ++bit;
+                    }
+                }
+            assert(data.size()==bit);
             }
+        
         }    
     
     
