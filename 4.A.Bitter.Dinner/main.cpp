@@ -118,7 +118,7 @@ boost::multiprecision::cpp_int work_case(const std::vector<bool>& bits, std::siz
             std::reverse(data.begin(), data.end());
             if (nbits%8!=0) {
                 auto zeros = 8 - (nbits % 8);
-                data.insert(data.end(), zeros, false);
+                data.insert(data.end()-(nbits%8), zeros, false);
                 }
 
             // go byte by byte
