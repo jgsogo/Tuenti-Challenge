@@ -69,25 +69,48 @@ boost::multiprecision::cpp_int work_case(const std::vector<bool>& bits, std::siz
 
     // Build integer
     boost::multiprecision::cpp_int ret(0);
-    std::vector<bool> data(bits.begin() + position, bits.begin() + position + nbits);
-
-    if (!little_endian && reverse) {
-        //  - BR
-        for (auto i = position; i<position+nbits; ++i) {
-            if (bits.at(i)) {
-                boost::multiprecision::bit_set(ret, i-position);
+    
+    if (!little_endian) {
+        //  - big-endian
+        if (reverse) {
+            //  - big-endian and reverse
+            for (auto i = position; i<position+nbits; ++i) {
+                if (bits.at(i)) {
+                    boost::multiprecision::bit_set(ret, i-position);
+                    }
                 }
             }
-        }
-    else if(!little_endian) {
-        for (auto i = position; i<position+nbits; ++i) {
-            if (bits.at(i)) {
-                boost::multiprecision::bit_set(ret, position+nbits-i-1);
+        else {
+            //  - big-endian
+            for (auto i = position; i<position+nbits; ++i) {
+                if (bits.at(i)) {
+                    boost::multiprecision::bit_set(ret, position+nbits-i-1);
+                    }
                 }
             }
         }
     else {
-        }
+        // nbits must be multiple of 8
+        auto zeros = 8 - (nbits % 8);
+        std::vector<bool> data(bits.begin() + position, bits.begin() + position + nbits);
+        data.insert(data.end(), zeros, false);
+
+        // go byte by byte
+        auto nbytes = nbits/8;
+        std::size_t byte = 0;
+        for (auto ibyte=0; ibyte<nbytes; ++ibyte) {
+            for (auto ibit=0; ibit<8; ++ibit) {
+                if (data[8*ibyte + 7-ibit]) {
+                    boost::multiprecision::bit_set(ret, 8*ibyte + ibit);
+                    }
+                }
+            }
+        
+        if (reverse) {
+            }
+        else {
+            }
+        }    
     
     
     position += nbits;
