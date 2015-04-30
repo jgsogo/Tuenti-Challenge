@@ -107,9 +107,7 @@ struct Data {
         uint64_t sum = 0;
         if (k < cache_size) {
             for (auto a = row0; a<row0+k; ++a) {
-                for (auto b = col0; b <col0+k; ++b) {
-                    sum += get_value(a, b);
-                    }
+                sum += get_value(a, col0, col0+k);
                 }
             }
         else {
@@ -155,6 +153,7 @@ struct Data {
             std::cout << "/+" << std::endl;
             }
         std::cout << "------------->>> " << test << " <> " << sum  << " ¿? " << ((test==sum)?"OK":"FAIL") << std::endl;
+        if ((test!=sum)) throw 0;
         return sum;
         };
     /*
@@ -221,7 +220,7 @@ int main (int argc, char *argv[]) {
     Data data;
     data.set_limits(x0_min, y0_min, x1_max, y1_max);
     data.parse_file("sheet.data");
-    data.precompute_cache();
+    data.precompute_cache(25);
 
     // And now start searching
     int i = 1;
@@ -229,7 +228,6 @@ int main (int argc, char *argv[]) {
         const clock_t begin_time = clock();
         std::cout << "Case " << i++ << ": " << it->compute(data) << std::endl;
         std::cout << "\t" << float( clock () - begin_time ) /  CLOCKS_PER_SEC << std::flush << std::endl;;
-        throw 0;
         }
     return 0;
 } 
