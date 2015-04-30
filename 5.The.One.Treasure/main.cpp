@@ -48,7 +48,7 @@ typedef std::shared_ptr<Island> pIsland;
 struct Connection {
     pIsland start;
     pIsland end;
-    std::size_t cost;
+    long cost;
     };
 
 
@@ -98,7 +98,7 @@ int main (int argc, char *argv[]) {
     std::size_t max_steps = world.constraint_search_space();
     // Search path for my boat
     pBoat me = *world.boats.begin();
-    long gold = world.search(me->gold, me->position, 0, max_steps, world.islands["Raftel"]);
+    long gold = world.search(me->gold+me->position->cost, me->position, 0, max_steps, world.islands["Raftel"]);
     std::cout << gold << std::endl;
     return 0;
     }
@@ -183,8 +183,8 @@ long World::search(long gold, pIsland current, std::size_t step, std::size_t max
                 // - Option 2) Move to any of the next islands
                 for (auto it = current->outgoing.begin(); it!=current->outgoing.end(); ++it) {
                     current->visited = true;
-                    if (gold_remaining!=0 && (gold_remaining - (*it)->cost) >= 0) { //! TODO: Do I have enough gold to travel this route? 
-                        auto option_gold = search(gold_remaining-(*it)->cost, (*it)->end, step+1, max_steps, end);
+                    if (gold_remaining!=0/* && (gold_remaining - (*it)->cost) >= 0*/) { //! TODO: Do I have enough gold to travel this route? 
+                        auto option_gold = search((std::max)(0L, gold_remaining - (*it)->cost), (*it)->end, step+1, max_steps, end);
                         best_option = (std::max)(best_option, option_gold);
                         }
                     current->visited = false;
