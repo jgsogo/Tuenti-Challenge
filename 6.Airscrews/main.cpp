@@ -15,6 +15,7 @@
 *   Optimizations:
 *       - Read just the data needed (it is passed in Data::set_limits) [TODO]
 *       - Precompute sums of a given size.
+*       - Parallelize   [TODO]
 */
 
 #define MAX_SIZE ((uint16_t)5000)
@@ -165,7 +166,7 @@ int main (int argc, char *argv[]) {
     Data data;
     data.set_limits(x0_min, y0_min, x1_max, y1_max);
     data.parse_file("sheet.data");
-    data.precompute_cache(50);
+    data.precompute_cache(25); // TODO: Why fifty? You can do it better.
 
     // And now start searching
     int i = 1;
@@ -180,8 +181,8 @@ int main (int argc, char *argv[]) {
 
 uint64_t Case::compute(const Data& data) {
     // flexibility
-    uint16_t rows_remain = (row1 - row0) - k*2 - 1;
-    uint16_t cols_remain = (col1 - col0) - k*2 - 1;
+    uint16_t rows_remain = (row1 - row0) - k*2;
+    uint16_t cols_remain = (col1 - col0) - k*2;
 
     uint64_t best_so_far = 0;
     for (auto r = 0; r<=rows_remain; ++r) {
