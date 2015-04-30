@@ -97,40 +97,47 @@ struct Data {
         return std::accumulate( &data[row*cols + col_init], &data[row*cols + col_end], 0, std::plus<uint64_t>());
         };
     uint64_t get_sum(uint16_t row0, uint16_t col0, uint16_t k) const {
-        auto r = k%cache_size;
-        auto n = k/cache_size;
-        auto init_row = (cache_size - row0%cache_size)%cache_size;
-        auto init_col = (cache_size - col0%cache_size)%cache_size;
+        auto r_up =  (row0%cache_size) ? cache_size-row0%cache_size : 0;
+        auto r_down =  ((row0+k)%cache_size) ? cache_size-(row0+k)%cache_size : 0;
+
+        auto r_left =  (col0%cache_size) ? cache_size-col0%cache_size : 0;
+        auto r_right =  ((col0+k)%cache_size) ? cache_size-(col0+k)%cache_size : 0;
+
         uint64_t sum = 0;
-        std::cout << "row0 = " << row0 << ", col0 = " << col0 << ", k = " << k << std::endl;
+        std::cout << "row0 = " << row0 << ", col0 = " << col0 << ", k = " << k << ", r_up = " << r_up << ", r_down = " << r_down << ", r_left = " << r_left << ", r_right = " << r_right << std::endl;
         // Rows not fitting with cache chunks (up)
-        std::cout << "\t for(" << row0 << "; " << row0+init_row << "; ++1) ==> Suma todas las columnas (arriba)" << std::endl;
-        for (auto ir = row0; ir<row0+init_row; ++ir) {
-            std::cout << "." << std::endl;
+        std::cout << "\t for(" << row0 << "; " << row0+r_up << "; ++1) ==> Suma todas las columnas (arriba)" << std::endl;
+        for (auto ir = row0; ir<row0+r_up; ++ir) {
+            std::cout << ".";
             sum += get_value(ir, col0, col0+k);
             }
-        std::cout << "\t for(" << row0+k-r+init_row << "; " << row0+k << "; ++1) ==> Suma todas las columnas (abajo)" << std::endl;
+        std::cout << "/+" << std::endl;
+        std::cout << "\t for(" << row0+k-r_down << "; " << row0+k << "; ++1) ==> Suma todas las columnas (abajo)" << std::endl;
         // Rows not fitting with cache chunks (down)
-        for (auto ir = row0+k-r+init_row; ir<row0+k; ++ir) {
-            std::cout << "." << std::endl;
+        for (auto ir = row0+k-r_down; ir<row0+k; ++ir) {
+            std::cout << ".";
             sum += get_value(ir, col0, col0+k);
             }
-        std::cout << "\t for(" << row0+init_row << "; " << row0+k-r+init_row << "; ++1) ==> Suma los trozos a derecha e izquierda." << std::endl;
+        std::cout << "/+" << std::endl;
+        std::cout << "\t for(" << row0+r_up << "; " << row0+k-r_down << "; ++1) ==> Suma los trozos a derecha e izquierda" << std::endl;
         // Cols not fitting with cache chunks (left + right)
-        for (auto ir = row0+init_row; ir < row0+k-r+init_row; ++ir) {
-            std::cout << "." << std::endl;
-            sum += get_value(ir, col0, col0+init_col);
-            sum += get_value(ir, col0+k-r+init_col, col0+k);
+        for (auto ir = row0+r_up; ir < row0+k-r_down; ++ir) {
+            std::cout << "." << std::flush;
+            sum += get_value(ir, col0, col0+r_left);
+            std::cout << "." << std::flush;
+            sum += get_value(ir, col0+k-r_right, col0+k);
             }
+        std::cout << "/+" << std::endl;
         // Cache chunks
-        std::cout << "\t for(" << row0+init_row << "; " << row0+k << "; +=cache_size" << std::endl;
-        std::cout << "\t for(" << col0+init_col << "; " << col0+k << "; +=cache_size" << std::endl;
-        for (auto ir = row0+init_row; ir < row0+k-r+init_row; ir+=cache_size) {
-            for (auto ic = col0+init_col; ic<col0+k-r+init_col; ic+=cache_size) {
-                std::cout << "." << std::endl;
+        std::cout << "\t for(" << row0+r_up << "; " << row0+k-r_down << "; +=" << cache_size << ")" << std::endl;
+        std::cout << "\t for(" << col0+r_left << "; " << col0+k-r_right << "; +=" << cache_size << ")" << std::endl;
+        for (auto ir = row0+r_up; ir < row0+k-r_down; ir+=cache_size) {
+            for (auto ic = col0+r_left; ic<col0+k-r_right; ic+=cache_size) {
+                std::cout << ".";
                 sum += cached.find(DataKey(ir, ic, cache_size))->second;
                 }
             }
+        std::cout << "/+" << std::endl;
         return sum;
         };
     /*
@@ -219,7 +226,6 @@ uint64_t Case::compute(const Data& data) {
             auto aspa1 = data.get_sum(row0+r, col0+c, k);
             auto aspa2 = data.get_sum(row0+r+k+1, col0+c+k+1, k);
             best_so_far = (std::max)(best_so_far, aspa1+aspa2);
-            throw std::exception();
             }
         }
     return best_so_far;
