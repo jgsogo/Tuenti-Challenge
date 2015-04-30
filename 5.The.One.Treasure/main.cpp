@@ -8,6 +8,14 @@
 #include <sstream>
 #include <cassert>
 
+/* Tuenti Challenge #5: The One Treasure
+*
+*   Path search in a graph. Graph is not big enough to use heuristics (max edges = 10000),
+*   so we will search the optimal solution using a depth-first-search algorithm over the
+*   graph with two optimizations:
+*       - search space constrained (some nodes may be deleted from the graph)
+*       - best path from each node is cached.
+*/
 
 // Structs to store data about the world
 struct Connection;
@@ -91,6 +99,7 @@ int main (int argc, char *argv[]) {
     // Search path for my boat
     pBoat me = *world.boats.begin();
     long gold = world.search(me->gold, me->position, 0, max_steps, world.islands["Raftel"]);
+    std::cout << gold << std::endl;
     return 0;
     }
 
@@ -124,11 +133,11 @@ std::size_t World::constraint_search_space() {
     for (auto iboat = boats.begin()+1; iboat!=boats.end(); ++iboat) { // We are guaranteed to have at least one boat
         auto path = compute_pirates_path(islands["Raftel"], *iboat);
         max_steps = (std::min)(max_steps, path.size());
-        std::cout << "Path for '" << (*iboat)->label << "': ";
-        for (auto step = path.begin(); step!=path.end(); ++step) {
-            std::cout << (*step)->id << " ";
-            }
-        std::cout << std::endl;
+        //std::cout << "Path for '" << (*iboat)->label << "': ";
+        //for (auto step = path.begin(); step!=path.end(); ++step) {
+        //    std::cout << (*step)->id << " ";
+        //    }
+        //std::cout << std::endl;
         }
     max_steps -= 1; // No need to reach the starting island ;D
     // Distance from any given island to Raftel.
@@ -159,8 +168,7 @@ long World::search(long gold, pIsland current, std::size_t step, std::size_t max
             return it_cache.first->second;
             }
 
-        // Explore this path
-        current->visited = true;
+        // Explore this path        
         long gold_remaining = (std::max)(0L, gold - current->get_cost(step));
         if (current == end) {   // Already at the end island?
             best_option = gold_remaining;
@@ -174,16 +182,17 @@ long World::search(long gold, pIsland current, std::size_t step, std::size_t max
                     }
                 // - Option 2) Move to any of the next islands
                 for (auto it = current->outgoing.begin(); it!=current->outgoing.end(); ++it) {
+                    current->visited = true;
                     if (gold_remaining!=0 && (gold_remaining - (*it)->cost) >= 0) { //! TODO: Do I have enough gold to travel this route? 
                         auto option_gold = search(gold_remaining-(*it)->cost, (*it)->end, step+1, max_steps, end);
                         best_option = (std::max)(best_option, option_gold);
                         }
+                    current->visited = false;
                     }
                 }
             }
 
-        it_cache.first->second = best_option;
-        current->visited = false;
+        it_cache.first->second = best_option;        
         }
     return best_option;
     }
