@@ -6,6 +6,8 @@
 #include <vector>
 #include <sstream>
 #include <assert.h>
+#include <map>
+#include <numeric>
 
 /* Tuenti Challenge #6: Airscrews
 *   - We have a MxN matrix (let's keep it generic, but being {M,N}<=5000)
@@ -13,10 +15,19 @@
 
 #define MAX_SIZE ((uint16_t)5000)
 
+struct DataKey {
+    uint16_t row, col, k;
+    DataKey(uint16_t row, uint16_t col, uint16_t k) : row(row), col(col), k(k) {};
+    bool operator<(const DataKey& other) const {
+        return ((row < other.row) || (row==other.row && col<other.col) || (row==other.row && col==other.col && k<other.k));
+        };
+    };
+
 struct Data {
     uint16_t* data;
     long rows, cols; // Total size of data matrix
     uint16_t col_min, row_min, col_max, row_max; // Area of interest regarding our cases.
+    mutable std::map<DataKey, uint64_t> cached;
 
     Data() {
         data = (uint16_t*)(malloc (sizeof(int) *MAX_SIZE*MAX_SIZE));
@@ -59,17 +70,31 @@ struct Data {
         assert(col >= col_min); assert(col <= col_max);
         return data[row*cols + col];
         };
+    uint64_t get_value(uint16_t row, uint16_t col_init, uint16_t col_end) const {
+        assert(row >= row_min); assert(row <= row_max);
+        assert(col_init >= col_min); assert(col_init <= col_max);
+        assert(col_end >= col_min); assert(col_end <= col_max);
+        return std::accumulate( &data[row*cols + col_init], &data[row*cols + col_end], 0, std::plus<uint64_t>());
+        //return data[row*cols + col];
+        };
     uint64_t get_sum(uint16_t row0, uint16_t col0, uint16_t k) const {
+        auto it = cached.insert(std::make_pair(DataKey(row0, col0, k), uint64_t() ));
+        if (!it.second) {
+            return it.first->second;
+            }
         assert(row0 >=row_min);
         assert(row0+k <= row_max);
         assert(col0 >=col_min);
         assert(col0+k <= col_max);
         uint64_t sum = 0;
         for (auto r = 0; r<k; ++r) {
-            for (auto c=0; c<k; ++c) {
-                sum += get_value(row0+r, col0+c);
-                }
+            sum += get_value(row0+r, col0, col0+k);
+            //for (auto c=0; c<k; ++c) {
+            //    sum += get_value(row0+r, col0+c);
+            //    }
             }
+
+        it.first->second = sum;
         return sum;
         }
     };
