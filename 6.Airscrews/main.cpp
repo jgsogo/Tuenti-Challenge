@@ -15,8 +15,8 @@
 
 struct Data {
     uint16_t* data;
-    long rows, cols;
-    uint16_t col_min, row_min, col_max, row_max;
+    long rows, cols; // Total size of data matrix
+    uint16_t col_min, row_min, col_max, row_max; // Area of interest regarding our cases.
 
     Data() {
         data = (uint16_t*)(malloc (sizeof(int) *MAX_SIZE*MAX_SIZE));
@@ -44,7 +44,7 @@ struct Data {
             if (row >= row_min && row <= row_max) {
                 std::stringstream stream(line);
                 std::size_t col = 0;
-                // TODO: Read only columns of interest.
+                // TODO: Read only columns of interest (¡optimization!)
                 while (!stream.eof()) {
                     stream >> data[row*cols + col++];
                     }
@@ -110,7 +110,7 @@ int main (int argc, char *argv[]) {
         x1_max = (std::max)(x1_max, it->col1);
         }
     
-    // Read sheet.data
+    // Read sheet.data (only relevant one)
     Data data;
     data.set_limits(x0_min, y0_min, x1_max, y1_max);
     data.parse_file("sheet.data");
@@ -130,8 +130,8 @@ uint64_t Case::compute(const Data& data) {
     uint16_t cols_remain = (col1 - col0) - k*2 - 1;
 
     uint64_t best_so_far = 0;
-    for (auto r = 0; r<rows_remain; ++r) {
-        for (auto c = 0; c<cols_remain; ++c) {
+    for (auto r = 0; r<=rows_remain; ++r) {
+        for (auto c = 0; c<=cols_remain; ++c) {
             auto aspa1 = data.get_sum(row0+r, col0+c, k);
             auto aspa2 = data.get_sum(row0+r+k+1, col0+c+k+1, k);
             best_so_far = (std::max)(best_so_far, aspa1+aspa2);
