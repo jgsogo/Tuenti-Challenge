@@ -19,23 +19,13 @@
 
 #define MAX_SIZE ((uint16_t)5000)
 
-struct DataKey {
-    uint16_t row, col, k;
-    DataKey(uint16_t row, uint16_t col, uint16_t k) : row(row), col(col), k(k) {};
-    bool operator<(const DataKey& other) const {
-        return ((row < other.row) || (row==other.row && col<other.col) || (row==other.row && col==other.col && k<other.k));
-        };
-    bool operator==(const DataKey& other) const {
-        return (row == other.row) && (col==other.col) && (k==other.k);
-        };
-    };
 
 struct Data {
     uint16_t* data;
     long rows, cols; // Total size of data matrix
     uint16_t col_min, row_min, col_max, row_max; // Area of interest regarding our cases.
     // Cache data
-    std::map<DataKey, uint64_t> cached;
+    std::map<std::pair<uint16_t, uint16_t>, uint64_t> cached;
     std::size_t cache_size;
 
     Data() {
@@ -80,13 +70,13 @@ struct Data {
         assert(cols%size == 0);
         cache_size = size;
         cached.clear();        
-        for (auto r=0; r<rows/size; r+=size) {
-            for (auto c=0; c<cols/size; c+=size) {
+        for (auto r=0; r<rows/size; ++r) {
+            for (auto c=0; c<cols/size; ++c) {
                 uint64_t sum = 0;
                 for (auto i=0; i<size; ++i) {
-                    sum += this->get_value(r+i, c, c+size);
-                    }                
-                cached.insert(std::make_pair(DataKey(r, c, size), sum));
+                    sum += this->get_value(r*size+i, c*size, c*size+size);
+                    }
+                auto it = cached.insert(std::make_pair(std::make_pair(r*size, c*size), sum));
                 }
             }
         };
@@ -133,6 +123,8 @@ struct Data {
                 }
             std::cout << "/+" << std::endl;
             std::cout << "\t for(" << row0+r_up << "; " << row0+k-r_down << "; ++1) ==> Suma los trozos a derecha e izquierda" << std::endl;
+            std::cout << "\t\t get_value(row, " << col0 << "; " << col0+r_left << "; ++1) ==> Columnas izda" << std::endl;
+            std::cout << "\t\t get_value(row, " << col0+k-r_right << "; " << col0+k << "; ++1) ==> Columnas dcha" << std::endl;
             // Cols not fitting with cache chunks (left + right)
             for (auto ir = row0+r_up; ir < row0+k-r_down; ++ir) {
                 std::cout << "." << std::flush;
@@ -147,9 +139,12 @@ struct Data {
             for (auto ir = row0+r_up; ir < row0+k-r_down; ir+=cache_size) {
                 for (auto ic = col0+r_left; ic<col0+k-r_right; ic+=cache_size) {
                     std::cout << ".";
-                    sum += cached.find(DataKey(ir, ic, cache_size))->second;
+                    auto it = cached.find(std::make_pair(ir, ic));
+                    std::cout << ir << "@" << ic << "@" << cache_size << std::endl;
+                    std::cout << it->first.first << "|" << it->first.second << "|" << it->second << std::endl;
+                    sum += it->second;
                     }
-                }
+                }            
             std::cout << "/+" << std::endl;
             }
         std::cout << "------------->>> " << test << " <> " << sum  << " ¿? " << ((test==sum)?"OK":"FAIL") << std::endl;
