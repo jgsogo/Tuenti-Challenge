@@ -49,13 +49,16 @@ struct Connection {
     pIsland start;
     pIsland end;
     long cost;
+    bool operator==(const Connection& other) const {
+        return ((start==other.start) && (end==other.end) && (cost==other.cost));
+        };
     };
 
 
 struct Boat {
-    char id;
+    short int id;
     std::string label;
-    std::size_t gold;
+    long gold;
 
     pIsland position;
     };
@@ -72,15 +75,16 @@ struct IslandCacheKey {
     };
 
 struct World {
+    typedef std::vector<pIsland> Path;
     std::map<std::string, pIsland> islands;
     std::vector<pBoat> boats;
     static int parse(const std::string& filename, World& world);
     std::size_t constraint_search_space();
     std::vector<pIsland> compute_pirates_path(pIsland end, pBoat);
-    std::map<IslandCacheKey, long> best_option_cache;
+    std::map<IslandCacheKey, std::pair<Path, long>> best_option_cache;
     void compute_distances_to(pIsland end, std::size_t step);
     void compute_distances_from(pIsland start, std::size_t step);
-    long search(long gold, pIsland current, std::size_t step, std::size_t max_steps, pIsland end);
+    std::pair<Path, long> search(long gold, pIsland current, std::size_t step, std::size_t max_steps, pIsland end);
     };
 
 
@@ -98,8 +102,14 @@ int main (int argc, char *argv[]) {
     std::size_t max_steps = world.constraint_search_space();
     // Search path for my boat
     pBoat me = *world.boats.begin();
-    long gold = world.search(me->gold+me->position->cost, me->position, 0, max_steps, world.islands["Raftel"]);
-    std::cout << gold << std::endl;
+    std::vector<pIsland> path;
+    std::pair<World::Path, long> best = world.search(me->gold+me->position->cost, me->position, 0, max_steps, world.islands["Raftel"]);
+    std::cout << "Path: ";
+    for(auto it = best.first.begin(); it!=best.first.end(); ++it) {
+        std::cout << " " << (*it)->id;
+        }
+    std::cout << std::endl;
+    std::cout << best.second << std::endl;
     return 0;
     }
 
@@ -109,16 +119,22 @@ void Island::order_connections() {
     auto order_connections = [](const pConnection& lhs, const pConnection& rhs) {
         return lhs->cost < rhs->cost;
         };
-    std::sort(outgoing.begin(), outgoing.end(), order_connections);
-    std::sort(incoming.begin(), incoming.end(), order_connections);
+    std::stable_sort(outgoing.begin(), outgoing.end(), order_connections);
+    //std::sort(incoming.begin(), incoming.end(), order_connections);
     }
 void Island::disconnect() {
     // Delete all connections and references to adjacent islands.
     for (auto it = outgoing.begin(); it!=outgoing.end(); ++it) {
-        std::remove((*it)->end->incoming.begin(), (*it)->end->incoming.end(), *it);
+        std::vector<pConnection>& inc = (*it)->end->incoming;
+        std::remove_if(inc.begin(), inc.end(), [it](const pConnection& rhs){
+            return *it->get() == *rhs.get();
+            });
         }
     for (auto it = incoming.begin(); it!=incoming.end(); ++it) {
-        std::remove((*it)->start->outgoing.begin(), (*it)->start->outgoing.end(), *it);
+        std::vector<pConnection>& out = (*it)->start->outgoing;
+        std::remove_if(out.begin(), out.end(), [it](const pConnection& rhs){
+            return (*it)==rhs;
+            });
         }
     outgoing.clear();
     incoming.clear();
@@ -133,11 +149,11 @@ std::size_t World::constraint_search_space() {
     for (auto iboat = boats.begin()+1; iboat!=boats.end(); ++iboat) { // We are guaranteed to have at least one boat
         auto path = compute_pirates_path(islands["Raftel"], *iboat);
         max_steps = (std::min)(max_steps, path.size());
-        //std::cout << "Path for '" << (*iboat)->label << "': ";
-        //for (auto step = path.begin(); step!=path.end(); ++step) {
-        //    std::cout << (*step)->id << " ";
-        //    }
-        //std::cout << std::endl;
+        std::cout << "Path for '" << (*iboat)->label << "': ";
+        for (auto step = path.begin(); step!=path.end(); ++step) {
+            std::cout << (*step)->id << " ";
+            }
+        std::cout << std::endl;
         }
     max_steps -= 1; // No need to reach the starting island ;D
     // Distance from any given island to Raftel.
@@ -158,12 +174,13 @@ std::size_t World::constraint_search_space() {
     return max_steps;
     }
 
-long World::search(long gold, pIsland current, std::size_t step, std::size_t max_steps, pIsland end) {
+std::pair<World::Path, long> World::search(long gold, pIsland current, std::size_t step, std::size_t max_steps, pIsland end) {
     // DFS-algorithm
-    long best_option = std::numeric_limits<long>::min();
+    std::pair<Path, long> best_option = std::make_pair(Path(), std::numeric_limits<long>::min());
+    //std::vector<pIsland> best_path;
     if (!current->visited) {
         // Is is cached?
-        auto it_cache = best_option_cache.insert(std::make_pair(IslandCacheKey(current->id, step, gold), 0));
+        auto it_cache = best_option_cache.insert(std::make_pair(IslandCacheKey(current->id, step, gold), std::make_pair(Path(), 0L)));
         if (!it_cache.second) {
             return it_cache.first->second;
             }
@@ -171,28 +188,33 @@ long World::search(long gold, pIsland current, std::size_t step, std::size_t max
         // Explore this path        
         long gold_remaining = (std::max)(0L, gold - current->get_cost(step));
         if (current == end) {   // Already at the end island?
-            best_option = gold_remaining;
+            best_option.second = gold_remaining;
             }
         else {
             // Search best path from my position to the end island.
             if (current->distance_to_end + step <= max_steps) { // If it is possible to arrive to the end.
                 // - Option 1) Pillage
                 if (current->distance_to_end + step < max_steps) {
-                    best_option = (std::max)(best_option, search(gold_remaining+10, current, step+1, max_steps, end));
+                    auto option_ret = search(gold_remaining+10+current->cost, current, step+1, max_steps, end);
+                    if (option_ret.second > best_option.second) {
+                        best_option = option_ret;
+                        }
                     }
                 // - Option 2) Move to any of the next islands
                 for (auto it = current->outgoing.begin(); it!=current->outgoing.end(); ++it) {
                     current->visited = true;
                     if (gold_remaining!=0/* && (gold_remaining - (*it)->cost) >= 0*/) { //! TODO: Do I have enough gold to travel this route? 
-                        auto option_gold = search((std::max)(0L, gold_remaining - (*it)->cost), (*it)->end, step+1, max_steps, end);
-                        best_option = (std::max)(best_option, option_gold);
+                        auto option_ret = search((std::max)(0L, gold_remaining - (*it)->cost), (*it)->end, step+1, max_steps, end);
+                        if (option_ret.second > best_option.second) {
+                            best_option = option_ret;
+                            }
                         }
                     current->visited = false;
                     }
                 }
             }
-
-        it_cache.first->second = best_option;        
+        best_option.first.insert(best_option.first.begin(), current);
+        it_cache.first->second = best_option;
         }
     return best_option;
     }
@@ -267,6 +289,11 @@ int World::parse(const std::string& filename, World& world) {
         con->start->outgoing.push_back(con);
         con->end->incoming.push_back(con);
         }
+
+    for (auto it = world.islands.begin(); it!=world.islands.end(); ++it) {
+        it->second->order_connections();
+        }
+
     // - Read boats
     file >> lines;
     for (auto i = 0; i<lines; ++i) {
