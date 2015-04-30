@@ -98,10 +98,10 @@ struct Data {
         };
     uint64_t get_sum(uint16_t row0, uint16_t col0, uint16_t k) const {
         auto r_up =  (row0%cache_size) ? cache_size-row0%cache_size : 0;
-        auto r_down =  ((row0+k)%cache_size) ? cache_size-(row0+k)%cache_size : 0;
+        auto r_down =  (row0+k)%cache_size;
 
         auto r_left =  (col0%cache_size) ? cache_size-col0%cache_size : 0;
-        auto r_right =  ((col0+k)%cache_size) ? cache_size-(col0+k)%cache_size : 0;
+        auto r_right =  (col0+k)%cache_size;
 
         uint64_t sum = 0;
         std::cout << "row0 = " << row0 << ", col0 = " << col0 << ", k = " << k << ", r_up = " << r_up << ", r_down = " << r_down << ", r_left = " << r_left << ", r_right = " << r_right << std::endl;
@@ -226,6 +226,7 @@ uint64_t Case::compute(const Data& data) {
             auto aspa1 = data.get_sum(row0+r, col0+c, k);
             auto aspa2 = data.get_sum(row0+r+k+1, col0+c+k+1, k);
             best_so_far = (std::max)(best_so_far, aspa1+aspa2);
+            throw std::exception();
             }
         }
     return best_so_far;
