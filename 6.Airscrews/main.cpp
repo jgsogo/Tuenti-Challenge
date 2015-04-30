@@ -39,10 +39,12 @@ struct Data {
         std::stringstream stream(line);
         stream >> rows >> cols;
         for (auto row = 0; row < rows; ++row) {
+            // TODO: Advance to row_min
             std::getline(datafile, line);
             if (row >= row_min && row <= row_max) {
                 std::stringstream stream(line);
                 std::size_t col = 0;
+                // TODO: Read only columns of interest.
                 while (!stream.eof()) {
                     stream >> data[row*cols + col++];
                     }
@@ -52,17 +54,17 @@ struct Data {
                 }
             }
         };
-    uint16_t get_value(uint16_t row, uint16_t col) {
+    uint16_t get_value(uint16_t row, uint16_t col) const {
         assert(row >= row_min); assert(row <= row_max);
         assert(col >= col_min); assert(col <= col_max);
         return data[row*cols + col];
         };
-    long get_sum(uint16_t row0, uint16_t col0, uint16_t k) {
+    uint64_t get_sum(uint16_t row0, uint16_t col0, uint16_t k) const {
         assert(row0 >=row_min);
         assert(row0+k <= row_max);
         assert(col0 >=col_min);
         assert(col0+k <= col_max);
-        long sum = 0;
+        uint64_t sum = 0;
         for (auto r = 0; r<k; ++r) {
             for (auto c=0; c<k; ++c) {
                 sum += get_value(row0+r, col0+c);
@@ -74,6 +76,8 @@ struct Data {
 
 struct Case {
     uint16_t col0, row0, col1, row1, k;
+
+    uint64_t compute(const Data& data);
     };
 
 // Main program: reads input file from argument
@@ -112,6 +116,26 @@ int main (int argc, char *argv[]) {
     data.parse_file("sheet.data");
 
     // And now start searching
-
+    int i = 1;
+    for (auto it = cases.begin(); it != cases.end(); ++it) {
+        std::cout << "Case " << i++ << ": " << it->compute(data) << std::endl;
+        }
     return 0;
 } 
+
+
+uint64_t Case::compute(const Data& data) {
+    // flexibility
+    uint16_t rows_remain = (row1 - row0) - k*2 - 1;
+    uint16_t cols_remain = (col1 - col0) - k*2 - 1;
+
+    uint64_t best_so_far = 0;
+    for (auto r = 0; r<rows_remain; ++r) {
+        for (auto c = 0; c<cols_remain; ++c) {
+            auto aspa1 = data.get_sum(row0+r, col0+c, k);
+            auto aspa2 = data.get_sum(row0+r+k+1, col0+c+k+1, k);
+            best_so_far = (std::max)(best_so_far, aspa1+aspa2);
+            }
+        }
+    return best_so_far;
+    }
