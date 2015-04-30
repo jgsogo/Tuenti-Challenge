@@ -13,7 +13,7 @@
 *   Path search in a graph. Graph is not big enough to use heuristics (max edges = 10000),
 *   so we will search the optimal solution using a depth-first-search algorithm over the
 *   graph with two optimizations:
-*       - search space constrained (some nodes may be deleted from the graph)
+*       - search space constrained (some nodes may be deleted from the graph) [disabled]
 *       - best path from each node is cached.
 */
 
@@ -104,11 +104,13 @@ int main (int argc, char *argv[]) {
     pBoat me = *world.boats.begin();
     std::vector<pIsland> path;
     std::pair<World::Path, long> best = world.search(me->gold+me->position->cost, me->position, 0, max_steps, world.islands["Raftel"]);
+    /*
     std::cout << "Path: ";
     for(auto it = best.first.begin(); it!=best.first.end(); ++it) {
         std::cout << " " << (*it)->id;
         }
     std::cout << std::endl;
+    */
     std::cout << best.second << std::endl;
     return 0;
     }
@@ -126,15 +128,11 @@ void Island::disconnect() {
     // Delete all connections and references to adjacent islands.
     for (auto it = outgoing.begin(); it!=outgoing.end(); ++it) {
         std::vector<pConnection>& inc = (*it)->end->incoming;
-        std::remove_if(inc.begin(), inc.end(), [it](const pConnection& rhs){
-            return *it->get() == *rhs.get();
-            });
+        std::remove(inc.begin(), inc.end(), *it);
         }
     for (auto it = incoming.begin(); it!=incoming.end(); ++it) {
         std::vector<pConnection>& out = (*it)->start->outgoing;
-        std::remove_if(out.begin(), out.end(), [it](const pConnection& rhs){
-            return (*it)==rhs;
-            });
+        std::remove(out.begin(), out.end(), *it);
         }
     outgoing.clear();
     incoming.clear();
@@ -149,19 +147,22 @@ std::size_t World::constraint_search_space() {
     for (auto iboat = boats.begin()+1; iboat!=boats.end(); ++iboat) { // We are guaranteed to have at least one boat
         auto path = compute_pirates_path(islands["Raftel"], *iboat);
         max_steps = (std::min)(max_steps, path.size());
+        /*
         std::cout << "Path for '" << (*iboat)->label << "': ";
         for (auto step = path.begin(); step!=path.end(); ++step) {
             std::cout << (*step)->id << " ";
             }
         std::cout << std::endl;
+        */
         }
     max_steps -= 1; // No need to reach the starting island ;D
     // Distance from any given island to Raftel.
     compute_distances_to(islands["Raftel"], 0);
     // Distance to any island from the starting point
     compute_distances_from( boats.begin()->get()->position, 0);
+    /*
     //  If min-distance from start plus min-distance to end island is greater
-    //  than max_steps, then this island can't be included in the solution.
+    //  than max_steps, then this island won't ever be part of any solution.
     for (auto it = islands.begin(); it!=islands.end(); ) {
         if ( (it->second->distance_to_start + it->second->distance_to_end) > max_steps) {
             it->second->disconnect();
@@ -171,6 +172,7 @@ std::size_t World::constraint_search_space() {
             ++it;
             }
         }    
+    */
     return max_steps;
     }
 
