@@ -87,13 +87,6 @@ struct Data {
         return std::accumulate( &data[row*cols + col_init], &data[row*cols + col_end], 0, std::plus<uint64_t>());
         };
     uint64_t get_sum(uint16_t row0, uint16_t col0, uint16_t k) const {        
-        uint64_t test = 0;
-        for (auto a = row0; a<row0+k; ++a) {
-            for (auto b = col0; b <col0+k; ++b) {
-                test += get_value(a, b);
-                }
-            }
-
         uint64_t sum = 0;
         if (k < cache_size) {
             for (auto a = row0; a<row0+k; ++a) {
@@ -107,72 +100,29 @@ struct Data {
             auto r_left =  (col0%cache_size) ? cache_size-col0%cache_size : 0;
             auto r_right =  (k>=cache_size) ? (col0+k)%cache_size : 0;
 
-            std::cout << "row0 = " << row0 << ", col0 = " << col0 << ", k = " << k << ", r_up = " << r_up << ", r_down = " << r_down << ", r_left = " << r_left << ", r_right = " << r_right << std::endl;
             // Rows not fitting with cache chunks (up)
-            std::cout << "\t for(" << row0 << "; " << row0+r_up << "; ++1) ==> Suma todas las columnas (arriba)" << std::endl;
             for (auto ir = row0; ir<row0+r_up; ++ir) {
-                std::cout << ".";
                 sum += get_value(ir, col0, col0+k);
                 }
-            std::cout << "/+" << std::endl;
-            std::cout << "\t for(" << row0+k-r_down << "; " << row0+k << "; ++1) ==> Suma todas las columnas (abajo)" << std::endl;
             // Rows not fitting with cache chunks (down)
             for (auto ir = row0+k-r_down; ir<row0+k; ++ir) {
-                std::cout << ".";
                 sum += get_value(ir, col0, col0+k);
                 }
-            std::cout << "/+" << std::endl;
-            std::cout << "\t for(" << row0+r_up << "; " << row0+k-r_down << "; ++1) ==> Suma los trozos a derecha e izquierda" << std::endl;
-            std::cout << "\t\t get_value(row, " << col0 << "; " << col0+r_left << "; ++1) ==> Columnas izda" << std::endl;
-            std::cout << "\t\t get_value(row, " << col0+k-r_right << "; " << col0+k << "; ++1) ==> Columnas dcha" << std::endl;
             // Cols not fitting with cache chunks (left + right)
             for (auto ir = row0+r_up; ir < row0+k-r_down; ++ir) {
-                std::cout << "." << std::flush;
                 sum += get_value(ir, col0, col0+r_left);
-                std::cout << "." << std::flush;
                 sum += get_value(ir, col0+k-r_right, col0+k);
                 }
-            std::cout << "/+" << std::endl;
             // Cache chunks
-            std::cout << "\t for(" << row0+r_up << "; " << row0+k-r_down << "; +=" << cache_size << ")" << std::endl;
-            std::cout << "\t for(" << col0+r_left << "; " << col0+k-r_right << "; +=" << cache_size << ")" << std::endl;
             for (auto ir = row0+r_up; ir < row0+k-r_down; ir+=cache_size) {
                 for (auto ic = col0+r_left; ic<col0+k-r_right; ic+=cache_size) {
-                    std::cout << ".";
                     auto it = cached.find(std::make_pair(ir, ic));
-                    std::cout << ir << "@" << ic << "@" << cache_size << std::endl;
-                    std::cout << it->first.first << "|" << it->first.second << "|" << it->second << std::endl;
                     sum += it->second;
                     }
                 }            
-            std::cout << "/+" << std::endl;
             }
-        std::cout << "------------->>> " << test << " <> " << sum  << " ¿? " << ((test==sum)?"OK":"FAIL") << std::endl;
-        if ((test!=sum)) throw 0;
         return sum;
         };
-    /*
-    uint64_t get_sum(uint16_t row0, uint16_t col0, uint16_t k) const {
-        auto it = cached.insert(std::make_pair(DataKey(row0, col0, k), uint64_t() ));
-        if (!it.second) {
-            return it.first->second;
-            }
-        assert(row0 >=row_min);
-        assert(row0+k <= row_max);
-        assert(col0 >=col_min);
-        assert(col0+k <= col_max);
-        uint64_t sum = 0;
-        for (auto r = 0; r<k; ++r) {
-            sum += get_value(row0+r, col0, col0+k);
-            //for (auto c=0; c<k; ++c) {
-            //    sum += get_value(row0+r, col0+c);
-            //    }
-            }
-
-        it.first->second = sum;
-        return sum;
-        }
-    */
     };
     
 
@@ -215,14 +165,14 @@ int main (int argc, char *argv[]) {
     Data data;
     data.set_limits(x0_min, y0_min, x1_max, y1_max);
     data.parse_file("sheet.data");
-    data.precompute_cache(25);
+    data.precompute_cache(50);
 
     // And now start searching
     int i = 1;
     for (auto it = cases.begin(); it != cases.end(); ++it) {
-        const clock_t begin_time = clock();
+        //const clock_t begin_time = clock();
         std::cout << "Case " << i++ << ": " << it->compute(data) << std::endl;
-        std::cout << "\t" << float( clock () - begin_time ) /  CLOCKS_PER_SEC << std::flush << std::endl;;
+        //std::cout << "\t" << float( clock () - begin_time ) /  CLOCKS_PER_SEC << std::flush << std::endl;;
         }
     return 0;
 } 
