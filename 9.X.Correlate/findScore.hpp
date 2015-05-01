@@ -4,6 +4,7 @@
 #define THRESCORR 1e-30
 
 double crosscorr(const double* x, int xSize, const double * y, int ySize, double yMean, double ySumCuadraticDiff) {
+    std::cout << x[0] << "|" << xSize << " >>";
     //! Calculate the mean of the two series x[], y[]
     double xMean = std::accumulate(x, x+xSize, 0.0)/xSize;
 
@@ -28,6 +29,7 @@ double crosscorr(const double* x, int xSize, const double * y, int ySize, double
             }
         best_xcorr = std::max(best_xcorr, xySum / denom);
         }
+    std::cout << " >>>> " << best_xcorr << " *\t" << xSize << " =\t" << best_xcorr*xSize << std::endl;
     return best_xcorr*xSize;
     }
 
