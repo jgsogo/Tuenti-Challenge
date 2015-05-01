@@ -70,7 +70,7 @@ struct RecipeTree {
 
         // Search removing one of the ingredients (recursiveness will go for the rest)
         std::vector<std::vector<std::size_t>> partial2;
-        for (auto it = ingredients.begin(); it!=ingredients.end()-1; ++it) {
+        for (auto it = ingredients.begin(); it!=ingredients.end()-1; it=std::upper_bound(it, ingredients.end()-1, *it)) {
             std::vector<std::vector<std::size_t>> partial2_inside;
             std::vector<std::size_t> pp(ingredients.begin(), it);
             pp.insert(pp.end(), it+1, ingredients.end());
@@ -81,7 +81,7 @@ struct RecipeTree {
                 partial2.insert(partial2.end(), *it_);
                 }
             }
-
+        
         // Search using the new discovered formulas
         std::vector<std::vector<std::size_t>> partial3;
         for (auto it = partial1.begin(); it!= partial1.end(); ++it) {
