@@ -9,24 +9,26 @@
 #include <set>
 #include <algorithm>
 
+typedef std::uint32_t t_ingredient;
+typedef std::vector<t_ingredient> t_ingredients;
+
 struct Recipe {
-    typedef std::vector<std::size_t> t_ingredients;
-    std::size_t target;
+    t_ingredient target;
     std::size_t value;
     t_ingredients ingredients; // Can be more than one of the same type
-    Recipe(const std::size_t& target, const std::size_t& value) : target(target), value(value) {};
+    Recipe(const t_ingredient& target, const std::size_t& value) : target(target), value(value) {};
     };
 
 struct RecipeBook {
     std::string filename;
     // Recipes storage
-    std::map<std::size_t, Recipe> recipes;
+    std::map<t_ingredient, Recipe> recipes;
     // Quick retrieval containers
-    static std::size_t next_id;
-    std::unordered_map<std::string, std::size_t> mapped_compounds; // <compound_name, compound_id>
-    std::unordered_map<std::size_t, std::size_t> gold_value; // <compound_id, gold_value>
+    static t_ingredient next_id;
+    std::unordered_map<std::string, t_ingredient> mapped_compounds; // <compound_name, compound_id>
+    std::unordered_map<t_ingredient, std::size_t> gold_value; // <compound_id, gold_value>
     #ifdef DEBUG
-        std::unordered_map<std::size_t, std::string> translated_keys; // DEBUG ONLY!
+        std::unordered_map<t_ingredient, std::string> translated_keys; // DEBUG ONLY!
     #endif
 
     RecipeBook(const std::string& filename) : filename(filename) {};
@@ -64,12 +66,12 @@ struct RecipeBook {
 
         };
 
-    std::vector<std::size_t> parse_ingredients(const std::string& line) const {
+    t_ingredients parse_ingredients(const std::string& line) const {
         std::stringstream ss(line);
         std::istream_iterator<std::string> it(ss);
         std::istream_iterator<std::string> end;
 
-        std::vector<std::size_t> ret;
+        t_ingredients ret;
         while (it!=end) {
             ret.push_back(mapped_compounds.find(*it)->second);
             it++;
@@ -79,7 +81,7 @@ struct RecipeBook {
         };
 
     #ifdef DEBUG
-    std::string translate_ingredients(const std::vector<std::size_t>& ingredients) const {
+    std::string translate_ingredients(const t_ingredients& ingredients) const {
         std::stringstream ss;
         for (auto it = ingredients.begin(); it!=ingredients.end(); ++it) {
             ss << " | " << translated_keys.find(*it)->second;
@@ -88,11 +90,11 @@ struct RecipeBook {
         };
     #endif
 
-    std::size_t value(const std::vector<std::size_t>& items) const {
-        return std::accumulate(items.begin(), items.end(), std::size_t(0), [this](const std::size_t& a, std::size_t b){
+    std::size_t value(const t_ingredients& items) const {
+        return std::accumulate(items.begin(), items.end(), std::size_t(0), [this](const std::size_t& a, t_ingredient b){
             return a + gold_value.find(b)->second;
             });
         };        
     
     };
-std::size_t RecipeBook::next_id = 1; // Value 0 is reserved for NONE
+t_ingredient RecipeBook::next_id = 1; // Value 0 is reserved for NONE

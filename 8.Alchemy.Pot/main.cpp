@@ -44,7 +44,7 @@ int main (int argc, char *argv[]) {
     std::getline(file, line); // n_cases
     while(std::getline(file, line)) {
         std::stringstream ss(line);
-        std::vector<std::size_t> icase = book.parse_ingredients(line);
+        t_ingredients icase = book.parse_ingredients(line);
 
         #ifdef DEBUG
         std::cout << std::endl << "----------------------------" << std::endl;
@@ -56,7 +56,7 @@ int main (int argc, char *argv[]) {
         #endif
 
         // Work on this case-inventory
-        std::vector<std::vector<std::size_t>> options;
+        std::vector<t_ingredients> options;
         options.push_back(icase);
         tree.retrieve(icase, options);
         
