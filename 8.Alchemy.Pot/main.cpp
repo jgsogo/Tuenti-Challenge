@@ -5,6 +5,8 @@
 #include <fstream>
 
 #include "RecipeBook.hpp"
+#include "RecipeTree.hpp"
+#include "Inventory.hpp"
 
 /* Tuenti Challenge #8: Alchemy Pot
 *
@@ -25,8 +27,11 @@ int main (int argc, char *argv[]) {
 
     
     // Get the recipe book!
-    RecipeBook recipes("book.data");
-    recipes.read();
+    RecipeBook book("book.data");
+    book.read();
+    // Build the search tree
+    RecipeTree tree(book);
+    tree.build();
 
     return 0;
     }

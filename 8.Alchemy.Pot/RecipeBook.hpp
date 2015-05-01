@@ -7,18 +7,24 @@
 #include <unordered_map>
 #include <map>
 #include <set>
+#include <algorithm>
 
 struct Recipe {
+    typedef std::vector<std::size_t> t_ingredients;
     std::size_t target;
     std::size_t value;
-    std::set<std::size_t> compounds;
+    t_ingredients ingredients; // Can be more than one of the same type
     Recipe(const std::size_t& target, const std::size_t& value) : target(target), value(value) {};
     };
 
 struct RecipeBook {
     std::string filename;
-    std::unordered_map<std::string, std::size_t> mapped_compounds;
+    // Recipes storage
     std::map<std::size_t, Recipe> recipes;
+    // Quick retrieval containers
+    static std::size_t next_id;
+    std::unordered_map<std::string, std::size_t> mapped_compounds; // <compound_name, compound_id>
+    std::unordered_map<std::size_t, std::size_t> gold_value; // <compound_id, gold_value>
 
     RecipeBook(const std::string& filename) : filename(filename) {};
     int read() {
@@ -40,13 +46,24 @@ struct RecipeBook {
             std::vector<std::string> elements(it, end);
 
             // Build recipe
-            auto target = mapped_compounds[element];
+            auto target = next_id++;
+            mapped_compounds[element] = target;
+            gold_value[target] = value;
             auto it_recipe = recipes.insert(std::make_pair(target, Recipe(target, value)));
             for (auto source = elements.begin(); source != elements.end(); ++source) {
-                it_recipe.first->second.compounds.insert(mapped_compounds[(*source)]);
+                it_recipe.first->second.ingredients.push_back(mapped_compounds[(*source)]);
                 }
+            std::sort(it_recipe.first->second.ingredients.begin(), it_recipe.first->second.ingredients.end());
             }
-            
+
+        };
+
+    void build_reverse_index() {
+        for (auto it = recipes.begin(); it!=recipes.end(); ++it) {
+
+            }
+
         };
 
     };
+std::size_t RecipeBook::next_id = 1; // Value 0 is reserved for NONE
