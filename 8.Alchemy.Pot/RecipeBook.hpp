@@ -64,14 +64,14 @@ struct RecipeBook {
 
         };
 
-    std::vector<std::size_t> parse_ingredients(const std::string& line) {
+    std::vector<std::size_t> parse_ingredients(const std::string& line) const {
         std::stringstream ss(line);
         std::istream_iterator<std::string> it(ss);
         std::istream_iterator<std::string> end;
 
         std::vector<std::size_t> ret;
         while (it!=end) {
-            ret.push_back(mapped_compounds[(*it)]);
+            ret.push_back(mapped_compounds.find(*it)->second);
             it++;
             }
         std::sort(ret.begin(), ret.end());
@@ -79,16 +79,16 @@ struct RecipeBook {
         };
 
     #ifdef DEBUG
-    std::string translate_ingredients(const std::vector<std::size_t>& ingredients) {
+    std::string translate_ingredients(const std::vector<std::size_t>& ingredients) const {
         std::stringstream ss;
         for (auto it = ingredients.begin(); it!=ingredients.end(); ++it) {
-            ss << " " << translated_keys[(*it)];
+            ss << " | " << translated_keys.find(*it)->second;
             }
         return ss.str();
         };
     #endif
 
-    std::size_t value(const std::vector<std::size_t>& items) {
+    std::size_t value(const std::vector<std::size_t>& items) const {
         return std::accumulate(items.begin(), items.end(), std::size_t(0), [this](const std::size_t& a, std::size_t b){
             return a + gold_value.find(b)->second;
             });

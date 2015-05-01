@@ -4,13 +4,16 @@
 #include <iterator>
 #include <fstream>
 
-#define DEBUG
+//#define DEBUG // Define this preprocessor to write debug info to console
 
 #include "RecipeBook.hpp"
 #include "RecipeTree.hpp"
 
 /* Tuenti Challenge #8: Alchemy Pot
 *
+*   Optimizations
+*   - Build an indexed search tree for recipes
+*   - Cache partial results [NOT DONE]
 */
 
 
@@ -62,7 +65,7 @@ int main (int argc, char *argv[]) {
             auto opt_value = book.value(*opt);
             best_option = (std::max)(best_option, opt_value);
             #ifdef DEBUG
-            std::cout << "\t[" << opt_value << "]";
+            std::cout << std::endl << "\t[" << opt_value << "]";
             for (auto item = opt->begin(); item!=opt->end(); ++item) {
                 std::cout << " " << *item;
                 }

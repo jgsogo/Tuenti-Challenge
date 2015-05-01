@@ -2,7 +2,6 @@
 #pragma once
 
 #include "RecipeBook.hpp"
-#include <cassert>
 
 
 struct Node {
@@ -22,20 +21,23 @@ struct Node {
             compound = target;
             }
         };
-    void retrieve(Recipe::t_ingredients::const_iterator it_begin, Recipe::t_ingredients::const_iterator it_end, std::unordered_map<std::size_t, std::pair<Recipe::t_ingredients::const_iterator, Recipe::t_ingredients::const_iterator>>& targets) {
+    void retrieve(Recipe::t_ingredients::const_iterator it_begin, Recipe::t_ingredients::const_iterator it_end, std::vector<std::vector<std::size_t>>& results) {
         if (compound != 0) {
             #ifdef DEBUG
             std::cout << " = " << compound << std::endl;
             #endif
-            targets.insert(std::make_pair(compound, std::make_pair(it_begin, it_end)));
+            auto r = results.insert(results.end(), std::vector<std::size_t>(it_begin, it_end));
+            r->insert(r->end(), compound);
             }
-        if (it_begin != it_end) {
-            auto it = leaves.find(*it_begin);
-            if (it != leaves.end()) {
-                #ifdef DEBUG
-                std::cout << " " << it->first;
-                #endif
-                it->second->retrieve(it_begin+1, it_end, targets);
+        else {
+            if (it_begin != it_end) {
+                auto it = leaves.find(*it_begin);
+                if (it != leaves.end()) {
+                    #ifdef DEBUG
+                    std::cout << " " << it->first;
+                    #endif
+                    it->second->retrieve(it_begin+1, it_end, results);
+                    }
                 }
             }
         };
@@ -43,37 +45,57 @@ struct Node {
 
 struct RecipeTree {
     const RecipeBook& book;
-
-    // Tree structure    
     Node root;
 
     RecipeTree(const RecipeBook& recipes) : book(recipes) {};
+
     void build() {
         for (auto it = book.recipes.begin(); it!=book.recipes.end(); ++it) {
             // Recipe ingredients are ordered
             if (it->second.ingredients.size()) {
                 root.build(it->second.ingredients.begin(), it->second.ingredients.end(), it->second.target);
                 }
-            else {
-                //auto leaf = root.leaves.insert(std::make_pair(it->second.target, new Node(it->second.target)));
-                //assert(leaf.second);
-                }
             }
         };
 
-    int retrieve(const std::vector<std::size_t>& ingredients, std::vector<std::vector<std::size_t>>& results) {
-        std::unordered_map<std::size_t, std::pair<Recipe::t_ingredients::const_iterator, Recipe::t_ingredients::const_iterator>> targets;
-        root.retrieve(ingredients.begin(), ingredients.end(), targets);
-
-        for (auto it = targets.begin(); it!=targets.end(); ++it) {
-            // Insert discovered
-            auto r = results.insert(results.end(), std::vector<std::size_t>(it->second.first, it->second.second));
-            (*r).push_back(it->first);
-            std::sort((*r).begin(), (*r).end());
-
-            // Search for more
-            retrieve(*r, results);
+    std::size_t retrieve(const std::vector<std::size_t>& ingredients, std::vector<std::vector<std::size_t>>& results) {
+        if (ingredients.size()<2) {
+            return 0;
             }
-        return targets.size();
+        //std::cout<< std::endl << ">>>>>>> Search for: " << book.translate_ingredients(ingredients) << std::endl;
+
+        // Search from the beginning 
+        std::vector<std::vector<std::size_t>> partial1;
+        root.retrieve(ingredients.begin(), ingredients.end(), partial1);
+
+        // Search removing one of the ingredients (recursiveness will go for the rest)
+        std::vector<std::vector<std::size_t>> partial2;
+        for (auto it = ingredients.begin(); it!=ingredients.end()-1; ++it) {
+            std::vector<std::vector<std::size_t>> partial2_inside;
+            std::vector<std::size_t> pp(ingredients.begin(), it);
+            pp.insert(pp.end(), it+1, ingredients.end());
+            this->retrieve(pp, partial2_inside);
+
+            for (auto it_ = partial2_inside.begin(); it_!=partial2_inside.end(); ++it_) {
+                it_->insert(std::upper_bound(it_->begin(), it_->end(), *it), *it);
+                partial2.insert(partial2.end(), *it_);
+                }
+            }
+
+        // Search using the new discovered formulas
+        std::vector<std::vector<std::size_t>> partial3;
+        for (auto it = partial1.begin(); it!= partial1.end(); ++it) {
+            retrieve(*it, partial3);
+            }
+        for (auto it = partial2.begin(); it!= partial2.end(); ++it) {
+            retrieve(*it, partial3);
+            }
+
+        // Append it all
+        results.insert(results.end(), partial1.begin(), partial1.end());
+        results.insert(results.end(), partial2.begin(), partial2.end());
+        results.insert(results.end(), partial3.begin(), partial3.end());
+
+        return results.size();
         }
     };
