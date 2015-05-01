@@ -1,25 +1,22 @@
 #include <math.h>
+#include <algorithm>
 
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
 #define MAX(X,Y) ((X) < (Y) ? (Y) : (X))
 #define THRESCORR 1e-30
 
-std::vector<double> crosscorr(const double* x, const std::uint16_t& xSize, const double * y, const std::uint16_t& ySize, const double& yMean, const double& ySumCuadraticDiff)
+std::vector<double> crosscorr(const double* x, int xSize, const double * y, int ySize, double yMean, double ySumCuadraticDiff)
 {
     std::vector<double> xcorr;
 
     //! Calculate the mean of the two series x[], y[]
-    double xMean = 0.0;
-    for (int i = 0; i < xSize; i++) {
-        if (x[i] >= 0.0 && x[i] <= 15.0)
-        xMean += x[i] / xSize;
-    }
+    double xMean = std::accumulate(x, x+xSize, 0.0)/xSize;
 
     //! Calculate the denominator (product of standard deviations)
     double xSumCuadraticDiff = 0.0;
     for (int i = 0; i < xSize; i++) {
         xSumCuadraticDiff += pow(x[i] - xMean, 2);
-    }
+        }
     
     double denom = sqrt(xSumCuadraticDiff * ySumCuadraticDiff);
     if (denom < THRESCORR){
@@ -41,19 +38,15 @@ std::vector<double> crosscorr(const double* x, const std::uint16_t& xSize, const
     return xcorr;
 }
 
-double findScore(const double* wave, std::uint16_t waveSize, const double* pattern, std::uint16_t patternSize){
+double findScore(const double* wave, int waveSize, const double* pattern, int patternSize){
     double score = 0.0;
     int minSubvectorLength = 2;
 
     // Precompute data for pattern
+    double pMean = std::accumulate(pattern, pattern+patternSize, 0.0)/patternSize;
     double pSumCuadraticDiff = 0.0f;
-    double pSum = 0.0;
     for (auto i=0; i<patternSize; ++i) {
-        pSum += pattern[i];
-        }
-    double pMean = pSum/patternSize;
-    for (auto i=0; i<patternSize; ++i) {
-        pSumCuadraticDiff += pow(pattern[i]-pSum, 2);
+        pSumCuadraticDiff += pow(pattern[i]-pMean, 2);
         }
     
 
