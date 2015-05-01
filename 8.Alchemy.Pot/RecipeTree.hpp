@@ -45,7 +45,7 @@ struct Node {
 
 
 // Hash function borrowed from here (http://stackoverflow.com/questions/20511347/a-good-hash-function-for-a-vector)
-std::size_t hash(t_ingredients const& vec) {
+std::size_t hash_it(t_ingredients const& vec) {
     std::size_t seed = 0;
     for(auto& i : vec) {
         seed ^= i + 0x9e3779b9 + (seed << 6) + (seed >> 2);
@@ -57,7 +57,7 @@ std::size_t hash(t_ingredients const& vec) {
 struct RecipeTree {
     const RecipeBook& book;
     Node root;
-    std::unordered_map<std::size_t, std::vector<t_ingredients>> cache;
+    std::unordered_map<std::size_t, std::unordered_map<std::size_t, t_ingredients>> cache;
 
     RecipeTree(const RecipeBook& recipes) : book(recipes) {};
 
@@ -70,16 +70,38 @@ struct RecipeTree {
             }
         };
 
+    bool is_cached(const std::size_t& hash) const {
+        return (cache.find(hash) != cache.end());
+        };
+    const std::unordered_map<std::size_t, t_ingredients>& get_from_cache(const std::size_t& hash) const {
+        //std::cout << ".";
+        return cache.find(hash)->second;
+        };
+    void set_cache(const std::size_t& hash, const std::unordered_map<std::size_t, t_ingredients>& data) {
+        cache[hash] = data;
+        //std::cout << "+";
+        };
+    /*
+    void do_cache(const t_ingredients& ingredients, const std::unordered_map<std::size_t, t_ingredients>& data) {
+        auto hash = hash_it(ingredients);
+        set_cache(hash, data);
+        };
+    */
+
     std::size_t retrieve(const t_ingredients& ingredients, std::vector<t_ingredients>& results) {
         if (ingredients.size()<2) {
             return 0;
-            }            
-        //std::cout<< std::endl << ">>>>>>> Search for: " << book.translate_ingredients(ingredients) << std::endl;
-        auto hashed = hash(ingredients);
-        auto cached = cache.find(hashed);
-        if (cached != cache.end()) {
-            results.insert(results.end(), cached->second.begin(), cached->second.end());
-            return cached->second.size();
+            }
+        #ifdef DEBUG
+        std::cout<< std::endl << ">> Search for (" << results.size() << "): " << book.translate_ingredients(ingredients) << std::endl;
+        #endif
+        auto hash = hash_it(ingredients);
+        if (is_cached(hash)) {
+            auto data = get_from_cache(hash);
+            for (auto it = data.begin(); it!=data.end(); ++it) {
+                results.insert(results.end(), it->second);
+                }
+            return results.size();
             }
 
         // Search from the beginning 
@@ -92,7 +114,7 @@ struct RecipeTree {
             std::vector<t_ingredients> partial2_inside;
             t_ingredients pp(ingredients.begin(), it);
             pp.insert(pp.end(), it+1, ingredients.end());
-            this->retrieve(pp, partial2_inside);
+            retrieve(pp, partial2_inside);
 
             for (auto it_ = partial2_inside.begin(); it_!=partial2_inside.end(); ++it_) {
                 it_->insert(std::upper_bound(it_->begin(), it_->end(), *it), *it);
@@ -100,7 +122,7 @@ struct RecipeTree {
                 }
             }
         
-        // Search using the new discovered formulas
+        // Search using the new discovered formulas ()
         std::vector<t_ingredients> partial3;
         for (auto it = partial1.begin(); it!= partial1.end(); ++it) {
             retrieve(*it, partial3);
@@ -109,23 +131,22 @@ struct RecipeTree {
             retrieve(*it, partial3);
             }
 
-        // Depending on the number of ingredients, do cache or not (mem problem)
-        if (ingredients.size() > 5) {
-            auto data = cache.insert(std::make_pair(hashed, std::vector<t_ingredients>()));
-
-            // Append it all
-            data.first->second.insert(data.first->second.end(), partial1.begin(), partial1.end());
-            data.first->second.insert(data.first->second.end(), partial2.begin(), partial2.end());
-            data.first->second.insert(data.first->second.end(), partial3.begin(), partial3.end());
-
-            results.insert(results.end(), data.first->second.begin(), data.first->second.end());
+        // Append all results and cache.
+        std::unordered_map<std::size_t, t_ingredients> total;
+        for (auto it = partial1.begin(); it!=partial1.end(); ++it) {
+            total.insert(std::make_pair(hash_it(*it), *it));
             }
-        else {
-            results.insert(results.end(), partial1.begin(), partial1.end());
-            results.insert(results.end(), partial2.begin(), partial2.end());
-            results.insert(results.end(), partial3.begin(), partial3.end());
+        for (auto it = partial2.begin(); it!=partial2.end(); ++it) {
+            total.insert(std::make_pair(hash_it(*it), *it));
             }
+        for (auto it = partial3.begin(); it!=partial3.end(); ++it) {
+            total.insert(std::make_pair(hash_it(*it), *it));
+            }
+        set_cache(hash, total);
 
+        for (auto it = total.begin(); it!=total.end(); ++it) {
+            results.insert(results.end(), it->second);
+            }
         return results.size();
         }
     };

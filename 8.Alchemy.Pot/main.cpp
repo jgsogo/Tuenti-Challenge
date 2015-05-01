@@ -13,7 +13,7 @@
 *
 *   Optimizations
 *   - Build an indexed search tree for recipes
-*   - Cache partial results [NOT DONE]
+*   - Cache partial results
 */
 
 
