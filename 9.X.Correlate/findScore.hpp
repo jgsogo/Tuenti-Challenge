@@ -1,13 +1,9 @@
 #include <math.h>
 #include <algorithm>
 
-#define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
-#define MAX(X,Y) ((X) < (Y) ? (Y) : (X))
 #define THRESCORR 1e-30
 
-double crosscorr(const double* x, int xSize, const double * y, int ySize, double yMean, double ySumCuadraticDiff)
-{
- 
+double crosscorr(const double* x, int xSize, const double * y, int ySize, double yMean, double ySumCuadraticDiff) {
     //! Calculate the mean of the two series x[], y[]
     double xMean = std::accumulate(x, x+xSize, 0.0)/xSize;
 
@@ -28,13 +24,12 @@ double crosscorr(const double* x, int xSize, const double * y, int ySize, double
     for (int delay = 0; delay < (ySize - xSize + 1); ++delay) {
         double xySum = 0.0;
         for (int i = 0; i < xSize; ++i) {
-            xySum += (x[i] - xMean) * (y[i + delay ] - yMean);
-        }
-
+            xySum += (x[i] - xMean) * (y[i + delay] - yMean);
+            }
         best_xcorr = std::max(best_xcorr, xySum / denom);
-    }   
+        }
     return best_xcorr*xSize;
-}
+    }
 
 double findScore(const double* wave, int waveSize, const double* pattern, int patternSize){
     double score = 0.0;
@@ -56,4 +51,4 @@ double findScore(const double* wave, int waveSize, const double* pattern, int pa
         }
 
     return score;
-}
+    }
