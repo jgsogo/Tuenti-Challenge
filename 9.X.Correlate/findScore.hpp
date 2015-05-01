@@ -6,6 +6,7 @@
 
 struct DataChunk {
     const double* data; 
+    double* deviations; // used in patternData.
     int size;
     double sum;  // Sum of all the elements: x1 + x2 + ... xn
     double sum2; // Sum of squares: x1^2 + x2^2 + ... xn^2
@@ -31,7 +32,7 @@ double crosscorr(const DataChunk& x, const DataChunk& y) {
     for (int delay = 0; delay < (y.size - x.size + 1); ++delay) {
         double xySum = 0.0;
         for (int i = 0; i < x.size; ++i) {
-            xySum += (x.data[i] - x.mean) * (y.data[i + delay] - y.mean);
+            xySum += (x.data[i] - x.mean) * y.deviations[i+delay];
             }
         best_xcorr = std::max(best_xcorr, xySum / denom);
         }
@@ -47,11 +48,13 @@ double findScore(const double* wave, int waveSize, const double* pattern, int pa
     patternData.mean = std::accumulate(pattern, pattern+patternSize, 0.0)/patternSize;
     patternData.data = pattern;
     patternData.size = patternSize;
+    patternData.deviations = new double[patternData.size];
     double pSumCuadraticDiff = 0.0f;
     for (auto i=0; i<patternSize; ++i) {
         pSumCuadraticDiff += pow(pattern[i]-patternData.mean, 2);
+        patternData.deviations[i] = patternData.data[i] - patternData.mean;
         }
-    patternData.sum_cuadratic_diff = pSumCuadraticDiff;
+    patternData.sum_cuadratic_diff = pSumCuadraticDiff;    
 
 
     /* OPTIMIZACIONES relacionadas con la forma en que la onda es dividida para ser comparada con el patrón:
@@ -73,7 +76,7 @@ double findScore(const double* wave, int waveSize, const double* pattern, int pa
             if (subvectorLength <= waveSize - subvectorStart) {
                 xData.data = &(wave[subvectorStart]);
                 xData.mean = xData.sum/xData.size;
-                
+
                 auto xcorr = crosscorr(xData, patternData);
                 best_xcorr = std::max(best_xcorr, xcorr) ;
                 
