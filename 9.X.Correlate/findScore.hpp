@@ -4,19 +4,18 @@
 
 #define THRESCORR 1e-30
 
-struct WaveChunkData {
+struct DataChunk {
     const double* data; 
-    int Size;
-    double Sum;  // Sum of all the elements: x1 + x2 + ... xn
-    double Sum2; // Sum of squares: x1^2 + x2^2 + ... xn^2
+    int size;
+    double sum;  // Sum of all the elements: x1 + x2 + ... xn
+    double sum2; // Sum of squares: x1^2 + x2^2 + ... xn^2
+
+    double mean;
     };
 
-double crosscorr(const WaveChunkData& x, const double * y, int ySize, double yMean, double ySumCuadraticDiff) {
-    //! Calculate the mean of the two series x[], y[]
-    double xMean = x.Sum/x.Size;
-
+double crosscorr(const DataChunk& x, const double * y, int ySize, double yMean, double ySumCuadraticDiff) {
     //! Calculate the denominator (product of standard deviations)
-    double xSumCuadraticDiff = x.Sum2 - x.Size*xMean*xMean; // Conseguimos esta expresión desarrollando la expresión original y simplificando.
+    double xSumCuadraticDiff = x.sum2 - x.size*x.mean*x.mean; // Conseguimos esta expresión desarrollando la expresión original y simplificando.
                                                             //  TODO: OPTIMIZACION: ¿xSumCuadraticDiff es monótona con respecto a xMean?
                                                             //      En su caso podría desechar xMean más bajas que una dada
                                                             //      basándome en el THRESCORR
@@ -29,10 +28,10 @@ double crosscorr(const WaveChunkData& x, const double * y, int ySize, double yMe
     //! Calculate the correlation series
     double best_xcorr = 0.0;
 
-    for (int delay = 0; delay < (ySize - x.Size + 1); ++delay) {
+    for (int delay = 0; delay < (ySize - x.size + 1); ++delay) {
         double xySum = 0.0;
-        for (int i = 0; i < x.Size; ++i) {
-            xySum += (x.data[i] - xMean) * (y[i + delay] - yMean);
+        for (int i = 0; i < x.size; ++i) {
+            xySum += (x.data[i] - x.mean) * (y[i + delay] - yMean);
             }
         best_xcorr = std::max(best_xcorr, xySum / denom);
         }
@@ -60,21 +59,22 @@ double findScore(const double* wave, int waveSize, const double* pattern, int pa
     for (int subvectorLength = minSubvectorLength; subvectorLength<=maxSubvectorLength; ++subvectorLength) {
         //std::cout << "Length: " << subvectorLength << std::endl;
         // All these xcorr will be computed for the same chunk length
-        WaveChunkData xData;
-        xData.Size = subvectorLength;
-        xData.Sum = std::accumulate(wave, wave+subvectorLength, 0.0);
-        xData.Sum2 = std::inner_product(wave, wave+subvectorLength, wave, 0.0);
+        DataChunk xData;
+        xData.size = subvectorLength;
+        xData.sum = std::accumulate(wave, wave+subvectorLength, 0.0);
+        xData.sum2 = std::inner_product(wave, wave+subvectorLength, wave, 0.0);
         double best_xcorr = 0.0;
         for(int subvectorStart=0; subvectorStart <= waveSize - minSubvectorLength; ++subvectorStart) {
             if (subvectorLength <= waveSize - subvectorStart) {
                 xData.data = &(wave[subvectorStart]);
+                xData.mean = xData.sum/xData.size;
                 auto xcorr = crosscorr(xData, pattern, patternSize, pMean, pSumCuadraticDiff);
                 best_xcorr = std::max(best_xcorr, xcorr) ;
                 
                 //std::cout << "\t media: " << xData.Sum/xData.Size << "\t" << xcorr << std::endl;
                 // Update values of sum and sum^2
-                xData.Sum += wave[subvectorStart+subvectorLength] - wave[subvectorStart];
-                xData.Sum2 += wave[subvectorStart+subvectorLength]*wave[subvectorStart+subvectorLength] - wave[subvectorStart]*wave[subvectorStart];
+                xData.sum += wave[subvectorStart+subvectorLength] - wave[subvectorStart];
+                xData.sum2 += wave[subvectorStart+subvectorLength]*wave[subvectorStart+subvectorLength] - wave[subvectorStart]*wave[subvectorStart];
                 }
             }
         score = std::max(score, best_xcorr*subvectorLength);
