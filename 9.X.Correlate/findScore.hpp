@@ -1,5 +1,6 @@
 #include <math.h>
 #include <algorithm>
+#include <cassert>
 
 #define THRESCORR 1e-30
 
@@ -11,12 +12,14 @@ struct WaveChunkData {
     };
 
 double crosscorr(const WaveChunkData& x, const double * y, int ySize, double yMean, double ySumCuadraticDiff) {
-    std::cout << x.data[0] << "|" << " >>";
     //! Calculate the mean of the two series x[], y[]
     double xMean = x.Sum/x.Size;
 
     //! Calculate the denominator (product of standard deviations)
-    double xSumCuadraticDiff = x.Sum2 + x.Size*xMean*xMean - 2*xMean*x.Sum;
+    double xSumCuadraticDiff = x.Sum2 - x.Size*xMean*xMean; // Conseguimos esta expresión desarrollando la expresión original y simplificando.
+                                                            //  TODO: OPTIMIZACION: ¿xSumCuadraticDiff es monótona con respecto a xMean?
+                                                            //      En su caso podría desechar xMean más bajas que una dada
+                                                            //      basándome en el THRESCORR
     
     double denom = sqrt(xSumCuadraticDiff * ySumCuadraticDiff);
     if (denom < THRESCORR){
@@ -33,7 +36,6 @@ double crosscorr(const WaveChunkData& x, const double * y, int ySize, double yMe
             }
         best_xcorr = std::max(best_xcorr, xySum / denom);
         }
-    std::cout << " >>>> " << best_xcorr << std::endl;
     return best_xcorr;
     }
 
@@ -47,21 +49,16 @@ double findScore(const double* wave, int waveSize, const double* pattern, int pa
     for (auto i=0; i<patternSize; ++i) {
         pSumCuadraticDiff += pow(pattern[i]-pMean, 2);
         }
-    /*
-    for (int subvectorStart = 0; subvectorStart <= waveSize - minSubvectorLength; ++subvectorStart) {
-        int maxSubvectorLength = std::min(waveSize - subvectorStart, patternSize);
-        for (int subvectorLength = minSubvectorLength; subvectorLength <= maxSubvectorLength; ++subvectorLength) { 
-            double best_xcorr = crosscorr(&(wave[subvectorStart]), subvectorLength, pattern, patternSize, pMean, pSumCuadraticDiff);
-            score = std::max(score, best_xcorr);
-            }
-        }
-    */
 
-    // It is better to go with a constant length wave and just update sum of its elements (specially for large chunks).
-    std::cout << "Wave media: " << std::accumulate(wave, wave+waveSize, 0.0) << std::endl;
+    /* OPTIMIZACIONES relacionadas con la forma en que la onda es dividida para ser comparada con el patrón:
+        - Los bucles se realizan de tal forma que mantenemos el tamaño del trozo de onda constante, así
+            podemos limitarnos a actualizar algunos datos en vez de tener que recalcularlos cada vez.
+        - [OJO!] ¿El valor medio del trozo de onda está relacionado con este valor de correlación? ¿Puedo descartar
+            algún cálculo?
+    */
     int maxSubvectorLength = std::min(waveSize, patternSize);
     for (int subvectorLength = minSubvectorLength; subvectorLength<=maxSubvectorLength; ++subvectorLength) {
-        std::cout << "Length: " << subvectorLength << std::endl;
+        //std::cout << "Length: " << subvectorLength << std::endl;
         // All these xcorr will be computed for the same chunk length
         WaveChunkData xData;
         xData.Size = subvectorLength;
@@ -70,17 +67,17 @@ double findScore(const double* wave, int waveSize, const double* pattern, int pa
         double best_xcorr = 0.0;
         for(int subvectorStart=0; subvectorStart <= waveSize - minSubvectorLength; ++subvectorStart) {
             if (subvectorLength <= waveSize - subvectorStart) {
-                std::cout << "\t media: " << xData.Sum << "\t\t" << xData.Sum2 << std::endl;
                 xData.data = &(wave[subvectorStart]);
-                best_xcorr = std::max(best_xcorr, crosscorr(xData, pattern, patternSize, pMean, pSumCuadraticDiff)) ;
+                auto xcorr = crosscorr(xData, pattern, patternSize, pMean, pSumCuadraticDiff);
+                best_xcorr = std::max(best_xcorr, xcorr) ;
                 
+                //std::cout << "\t media: " << xData.Sum/xData.Size << "\t" << xcorr << std::endl;
                 // Update values of sum and sum^2
                 xData.Sum += wave[subvectorStart+subvectorLength] - wave[subvectorStart];
                 xData.Sum2 += wave[subvectorStart+subvectorLength]*wave[subvectorStart+subvectorLength] - wave[subvectorStart]*wave[subvectorStart];
                 }
             }
         score = std::max(score, best_xcorr*subvectorLength);
-        std::cout << std::endl << std::endl;
         }
 
     return score;
