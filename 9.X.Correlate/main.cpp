@@ -3,17 +3,13 @@
 #include <sstream>
 #include <iterator>
 #include <fstream>
+#include <iomanip>
+#include <vector>
 
-//#define DEBUG // Define this preprocessor to write debug info to console
+#include "findScore.hpp"
 
-#include "RecipeBook.hpp"
-#include "RecipeTree.hpp"
-
-/* Tuenti Challenge #8: Alchemy Pot
+/* Tuenti Challenge #9: X Correlate
 *
-*   Optimizations
-*   - Build an indexed search tree for recipes
-*   - Cache partial results
 */
 
 
@@ -30,50 +26,28 @@ int main (int argc, char *argv[]) {
         return -1;
         }
 
-    
-    // Get the recipe book!
-    RecipeBook book("book.data");
-    book.read();
-    // Build the search tree
-    RecipeTree tree(book);
-    tree.build();
-
-    // Read cases from input file
-    std::size_t n_cases;
+    // Parse file
     std::string line;
-    std::getline(file, line); // n_cases
-    while(std::getline(file, line)) {
-        std::stringstream ss(line);
-        t_ingredients icase = book.parse_ingredients(line);
+    std::getline(file, line);
+    std::stringstream ss(line);
+    std::size_t len_pattern, len_wave;
+    ss >> len_pattern >> len_wave;
 
-        #ifdef DEBUG
-        std::cout << std::endl << "----------------------------" << std::endl;
-        std::cout << line << std::endl << "Initial items:";
-        for (auto i = icase.begin(); i!=icase.end(); ++i) {
-            std::cout << " " << *i;
-            }
-        std::cout << "\t [" << book.translate_ingredients(icase) << "]" << std::endl;
-        #endif
+    // Read pattern
+    double* pattern = new double[len_pattern];
+    for(auto i = 0; i<len_pattern; ++i) {
+        file >> pattern[i];
+        }
+    std::getline(file, line);
 
-        // Work on this case-inventory
-        std::vector<t_ingredients> options;
-        options.push_back(icase);
-        tree.retrieve(icase, options);
-        
-        size_t best_option = 0;
-        for (auto opt = options.begin(); opt!=options.end(); ++opt) {
-            auto opt_value = book.value(*opt);
-            best_option = (std::max)(best_option, opt_value);
-            #ifdef DEBUG
-            std::cout << std::endl << "\t[" << opt_value << "]";
-            for (auto item = opt->begin(); item!=opt->end(); ++item) {
-                std::cout << " " << *item;
-                }
-            std::cout << "\t [" << book.translate_ingredients(*opt) << "]" << std::endl;
-            #endif
-            }
-        std::cout << best_option << std::endl;
-        }    
+    // Read wave
+    double* wave = new double[len_wave];
+    for(auto i = 0; i<len_wave; ++i) {
+        file >> wave[i];
+        }
+    
+    // Compute
+    std::cout << std::fixed << std::setprecision(4) << findScore(wave, len_wave, pattern, len_pattern) << std::endl;
 
     return 0;
     }
