@@ -57,8 +57,10 @@ int main (int argc, char *argv[]) {
         options.push_back(icase);
         tree.retrieve(icase, options);
         
+        size_t best_option = 0;
         for (auto opt = options.begin(); opt!=options.end(); ++opt) {
             auto opt_value = book.value(*opt);
+            best_option = (std::max)(best_option, opt_value);
             #ifdef DEBUG
             std::cout << "\t[" << opt_value << "]";
             for (auto item = opt->begin(); item!=opt->end(); ++item) {
@@ -67,7 +69,7 @@ int main (int argc, char *argv[]) {
             std::cout << "\t [" << book.translate_ingredients(*opt) << "]" << std::endl;
             #endif
             }
-        
+        std::cout << best_option << std::endl;
         }    
 
     return 0;
