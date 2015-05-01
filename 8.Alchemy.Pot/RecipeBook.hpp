@@ -25,6 +25,9 @@ struct RecipeBook {
     static std::size_t next_id;
     std::unordered_map<std::string, std::size_t> mapped_compounds; // <compound_name, compound_id>
     std::unordered_map<std::size_t, std::size_t> gold_value; // <compound_id, gold_value>
+    #ifdef DEBUG
+        std::unordered_map<std::size_t, std::string> translated_keys; // DEBUG ONLY!
+    #endif
 
     RecipeBook(const std::string& filename) : filename(filename) {};
     int read() {
@@ -48,6 +51,9 @@ struct RecipeBook {
             // Build recipe
             auto target = next_id++;
             mapped_compounds[element] = target;
+            #ifdef DEBUG
+            translated_keys[target] = element;
+            #endif
             gold_value[target] = value;
             auto it_recipe = recipes.insert(std::make_pair(target, Recipe(target, value)));
             for (auto source = elements.begin(); source != elements.end(); ++source) {
@@ -71,7 +77,17 @@ struct RecipeBook {
         std::sort(ret.begin(), ret.end());
         return ret;
         };
-    
+
+    #ifdef DEBUG
+    std::string translate_ingredients(const std::vector<std::size_t>& ingredients) {
+        std::stringstream ss;
+        for (auto it = ingredients.begin(); it!=ingredients.end(); ++it) {
+            ss << " " << translated_keys[(*it)];
+            }
+        return ss.str();
+        };
+    #endif
+
     std::size_t value(const std::vector<std::size_t>& items) {
         return std::accumulate(items.begin(), items.end(), std::size_t(0), [this](const std::size_t& a, std::size_t b){
             return a + gold_value.find(b)->second;

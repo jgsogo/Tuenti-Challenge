@@ -23,11 +23,12 @@ struct Node {
             }
         };
     void retrieve(Recipe::t_ingredients::const_iterator it_begin, Recipe::t_ingredients::const_iterator it_end, std::unordered_map<std::size_t, std::pair<Recipe::t_ingredients::const_iterator, Recipe::t_ingredients::const_iterator>>& targets) {
-        if (compound) {
+        if (compound != 0) {
             targets.insert(std::make_pair(compound, std::make_pair(it_begin, it_end)));
             }
         if (it_begin != it_end) {
-            for(auto it = leaves.begin(); it!=leaves.end(); ++it) {
+            auto it = leaves.find(*it_begin);
+            if (it != leaves.end()) {
                 it->second->retrieve(it_begin+1, it_end, targets);
                 }
             }
@@ -52,6 +53,7 @@ struct RecipeTree {
         root.retrieve(ingredients.begin(), ingredients.end(), targets);
 
         std::vector<std::vector<std::size_t>> ret;
+        ret.insert(ret.end(), ingredients);
         for (auto it = targets.begin(); it!=targets.end(); ++it) {
             auto r = ret.insert(ret.end(), std::vector<std::size_t>(it->second.first, it->second.second));
             (*r).push_back(it->first);
