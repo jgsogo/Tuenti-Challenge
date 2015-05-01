@@ -4,7 +4,7 @@
 #define MAX(X,Y) ((X) < (Y) ? (Y) : (X))
 #define THRESCORR 1e-30
 
-std::vector<double> crosscorr(const double* x, int xSize, const double * y, int ySize, const double& yMean, const double& ySumCuadraticDiff)
+std::vector<double> crosscorr(const double* x, const std::uint16_t& xSize, const double * y, const std::uint16_t& ySize, const double& yMean, const double& ySumCuadraticDiff)
 {
     std::vector<double> xcorr;
 
