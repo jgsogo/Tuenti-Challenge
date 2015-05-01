@@ -53,7 +53,9 @@ int main (int argc, char *argv[]) {
         #endif
 
         // Work on this case-inventory
-        auto options = tree.retrieve(icase);
+        std::vector<std::vector<std::size_t>> options;
+        options.push_back(icase);
+        tree.retrieve(icase, options);
         
         for (auto opt = options.begin(); opt!=options.end(); ++opt) {
             auto opt_value = book.value(*opt);
