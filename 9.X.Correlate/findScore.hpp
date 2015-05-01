@@ -13,7 +13,7 @@ double crosscorr(const double* x, int xSize, const double * y, int ySize, double
 
     //! Calculate the denominator (product of standard deviations)
     double xSumCuadraticDiff = 0.0;
-    for (int i = 0; i < xSize; i++) {
+    for (int i = 0; i < xSize; ++i) {
         xSumCuadraticDiff += pow(x[i] - xMean, 2);
         }
     
@@ -25,9 +25,9 @@ double crosscorr(const double* x, int xSize, const double * y, int ySize, double
     //! Calculate the correlation series
     double best_xcorr = 0.0;
 
-    for (int delay = 0; delay < (ySize - xSize + 1); delay++) {
+    for (int delay = 0; delay < (ySize - xSize + 1); ++delay) {
         double xySum = 0.0;
-        for (int i = 0; i < xSize; i++) {
+        for (int i = 0; i < xSize; ++i) {
             xySum += (x[i] - xMean) * (y[i + delay ] - yMean);
         }
 
@@ -47,9 +47,9 @@ double findScore(const double* wave, int waveSize, const double* pattern, int pa
         pSumCuadraticDiff += pow(pattern[i]-pMean, 2);
         }
     
-
-    for (int subvectorStart = 0; subvectorStart <= waveSize - minSubvectorLength; subvectorStart++) {
-        for (int subvectorLength = minSubvectorLength; subvectorLength <= MIN(waveSize - subvectorStart, patternSize); subvectorLength++) { 
+    for (int subvectorStart = 0; subvectorStart <= waveSize - minSubvectorLength; ++subvectorStart) {
+        int maxSubvectorLength = std::min(waveSize - subvectorStart, patternSize);
+        for (int subvectorLength = minSubvectorLength; subvectorLength <= maxSubvectorLength; ++subvectorLength) { 
             double best_xcorr = crosscorr(&(wave[subvectorStart]), subvectorLength, pattern, patternSize, pMean, pSumCuadraticDiff);
             score = std::max(score, best_xcorr);
             }
