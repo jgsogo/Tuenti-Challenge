@@ -58,12 +58,25 @@ struct RecipeBook {
 
         };
 
-    void build_reverse_index() {
-        for (auto it = recipes.begin(); it!=recipes.end(); ++it) {
+    std::vector<std::size_t> parse_ingredients(const std::string& line) {
+        std::stringstream ss(line);
+        std::istream_iterator<std::string> it(ss);
+        std::istream_iterator<std::string> end;
 
+        std::vector<std::size_t> ret;
+        while (it!=end) {
+            ret.push_back(mapped_compounds[(*it)]);
+            it++;
             }
-
+        std::sort(ret.begin(), ret.end());
+        return ret;
         };
-
+    
+    std::size_t value(const std::vector<std::size_t>& items) {
+        return std::accumulate(items.begin(), items.end(), std::size_t(0), [this](const std::size_t& a, std::size_t b){
+            return a + gold_value.find(b)->second;
+            });
+        };        
+    
     };
 std::size_t RecipeBook::next_id = 1; // Value 0 is reserved for NONE

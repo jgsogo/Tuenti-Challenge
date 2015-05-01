@@ -47,5 +47,16 @@ struct RecipeTree {
             root.build(it->second.ingredients.begin(), it->second.ingredients.end(), it->second.target);
             }
         };
-    
+    std::vector<std::vector<std::size_t>> retrieve(const std::vector<std::size_t>& ingredients) {
+        std::unordered_map<std::size_t, std::pair<Recipe::t_ingredients::const_iterator, Recipe::t_ingredients::const_iterator>> targets;
+        root.retrieve(ingredients.begin(), ingredients.end(), targets);
+
+        std::vector<std::vector<std::size_t>> ret;
+        for (auto it = targets.begin(); it!=targets.end(); ++it) {
+            auto r = ret.insert(ret.end(), std::vector<std::size_t>(it->second.first, it->second.second));
+            (*r).push_back(it->first);
+            std::sort((*r).begin(), (*r).end());
+            }
+        return ret;
+        }
     };
