@@ -30,7 +30,7 @@ int main (int argc, char *argv[]) {
     std::string line;
     std::getline(file, line);
     std::stringstream ss(line);
-    std::size_t len_pattern, len_wave;
+    std::uint16_t len_pattern, len_wave;
     ss >> len_pattern >> len_wave;
 
     // Read pattern
@@ -47,7 +47,11 @@ int main (int argc, char *argv[]) {
         }
     
     // Compute
-    std::cout << std::fixed << std::setprecision(4) << findScore(wave, len_wave, pattern, len_pattern) << std::endl;
+    const clock_t begin_time = clock();
+    //std::cout << std::fixed << std::setprecision(4) << findScore(wave, len_wave, pattern, len_pattern) << std::endl;
+    for(std::uint16_t i=0; i<10000; ++i)
+        findScore(wave, len_wave, pattern, len_pattern);
+    std::cout << "Time:" << float( clock () - begin_time ) /  CLOCKS_PER_SEC << std::endl;
 
     return 0;
     }

@@ -4,7 +4,7 @@
 #define MAX(X,Y) ((X) < (Y) ? (Y) : (X))
 #define THRESCORR 1e-30
 
-std::vector<double> crosscorr(const double* x, int xSize, const double * y, int ySize)
+std::vector<double> crosscorr(const double* x, int xSize, const double * y, int ySize, const double& yMean, const double& ySumCuadraticDiff)
 {
     std::vector<double> xcorr;
 
@@ -15,23 +15,12 @@ std::vector<double> crosscorr(const double* x, int xSize, const double * y, int 
         xMean += x[i] / xSize;
     }
 
-    double yMean = 0.0;
-    for (int i = 0; i < ySize; i++) {
-        if (y[i] >= 0.0 && y[i] <= 15.0)
-        yMean += y[i] / ySize;
-    }
-
     //! Calculate the denominator (product of standard deviations)
     double xSumCuadraticDiff = 0.0;
     for (int i = 0; i < xSize; i++) {
         xSumCuadraticDiff += pow(x[i] - xMean, 2);
     }
     
-    double ySumCuadraticDiff = 0.0;
-    for (int i = 0; i < ySize; i++) {
-        ySumCuadraticDiff += pow(y[i] - yMean, 2);
-    }
-
     double denom = sqrt(xSumCuadraticDiff * ySumCuadraticDiff);
     if (denom < THRESCORR){
         xcorr.resize(0);
@@ -52,13 +41,25 @@ std::vector<double> crosscorr(const double* x, int xSize, const double * y, int 
     return xcorr;
 }
 
-double findScore(const double* wave, int waveSize, const double* pattern, int patternSize){
+double findScore(const double* wave, std::uint16_t waveSize, const double* pattern, std::uint16_t patternSize){
     double score = 0.0;
     int minSubvectorLength = 2;
 
+    // Precompute data for pattern
+    double pSumCuadraticDiff = 0.0f;
+    double pSum = 0.0;
+    for (auto i=0; i<patternSize; ++i) {
+        pSum += pattern[i];
+        }
+    double pMean = pSum/patternSize;
+    for (auto i=0; i<patternSize; ++i) {
+        pSumCuadraticDiff += pow(pattern[i]-pSum, 2);
+        }
+    
+
     for (int subvectorStart = 0; subvectorStart <= waveSize - minSubvectorLength; subvectorStart++) {
         for (int subvectorLength = minSubvectorLength; subvectorLength <= MIN(waveSize - subvectorStart, patternSize); subvectorLength++) { 
-            std::vector<double> xcorrelation = crosscorr(&(wave[subvectorStart]), subvectorLength, pattern, patternSize);
+            std::vector<double> xcorrelation = crosscorr(&(wave[subvectorStart]), subvectorLength, pattern, patternSize, pMean, pSumCuadraticDiff);
                 
             for (int xcorrelationIndex = 0; xcorrelationIndex < xcorrelation.size(); xcorrelationIndex++) {
                 score = MAX(score, xcorrelation[xcorrelationIndex] * subvectorLength);
