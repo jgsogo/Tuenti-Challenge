@@ -1,0 +1,6 @@
+5
+healing_potion healing_potion healing_potion
+healing_potion healing_potion healing_potion dragon_scale steel_shield
+healing_potion
+healing_potion phoenix_potion dragon_scale steel_shield
+basic_element_24 basic_element_562 basic_element_4654 basic_element_5701 basic_element_7589 basic_element_9175
