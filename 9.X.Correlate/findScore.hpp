@@ -3,10 +3,10 @@
 
 #define THRESCORR 1e-30
 
-double crosscorr(const double* x, int xSize, const double * y, int ySize, double yMean, double ySumCuadraticDiff) {
-    std::cout << x[0] << "|" << xSize << " >>";
+double crosscorr(const double* x, int xSize, double xSum, const double * y, int ySize, double yMean, double ySumCuadraticDiff) {
+    //std::cout << x[0] << "|" << xSize << " >>" << std::endl;
     //! Calculate the mean of the two series x[], y[]
-    double xMean = std::accumulate(x, x+xSize, 0.0)/xSize;
+    double xMean = xSum/xSize;
 
     //! Calculate the denominator (product of standard deviations)
     double xSumCuadraticDiff = 0.0;
@@ -29,7 +29,7 @@ double crosscorr(const double* x, int xSize, const double * y, int ySize, double
             }
         best_xcorr = std::max(best_xcorr, xySum / denom);
         }
-    std::cout << " >>>> " << best_xcorr << " *\t" << xSize << " =\t" << best_xcorr*xSize << std::endl;
+    //std::cout << " >>>> " << best_xcorr << " *\t" << xSize << " =\t" << best_xcorr*xSize << std::endl;
     return best_xcorr*xSize;
     }
 
@@ -43,12 +43,25 @@ double findScore(const double* wave, int waveSize, const double* pattern, int pa
     for (auto i=0; i<patternSize; ++i) {
         pSumCuadraticDiff += pow(pattern[i]-pMean, 2);
         }
-    
+    /*
     for (int subvectorStart = 0; subvectorStart <= waveSize - minSubvectorLength; ++subvectorStart) {
         int maxSubvectorLength = std::min(waveSize - subvectorStart, patternSize);
         for (int subvectorLength = minSubvectorLength; subvectorLength <= maxSubvectorLength; ++subvectorLength) { 
             double best_xcorr = crosscorr(&(wave[subvectorStart]), subvectorLength, pattern, patternSize, pMean, pSumCuadraticDiff);
             score = std::max(score, best_xcorr);
+            }
+        }
+    */
+
+    int maxSubvectorLength = std::min(waveSize, patternSize);
+    for (int subvectorLength = minSubvectorLength; subvectorLength<=maxSubvectorLength; ++subvectorLength) {        
+        double xSum = std::accumulate(wave, wave+subvectorLength, 0.0);
+        for(int subvectorStart=0; subvectorStart <= waveSize - minSubvectorLength; ++subvectorStart) {
+            if (subvectorLength <= waveSize - subvectorStart) {
+                double best_xcorr = crosscorr(&(wave[subvectorStart]), subvectorLength, xSum, pattern, patternSize, pMean, pSumCuadraticDiff);
+                score = std::max(score, best_xcorr);
+                xSum += wave[subvectorStart+subvectorLength] - wave[subvectorStart];
+                }
             }
         }
 
