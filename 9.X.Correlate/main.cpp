@@ -47,12 +47,12 @@ int main (int argc, char *argv[]) {
         }
     
     // Compute
-    /*
-    const clock_t begin_time = clock();
-    for(std::uint16_t i=0; i<10000; ++i)
-        findScore(wave, len_wave, pattern, len_pattern);
-    std::cout << "Time:" << float( clock () - begin_time ) /  CLOCKS_PER_SEC << std::endl;
-    */
+    
+    //for(std::uint16_t i=0; i<10000; ++i)
+    //    findScore(wave, len_wave, pattern, len_pattern);
+    
+    const clock_t begin_time = clock();    
     std::cout << std::fixed << std::setprecision(4) << findScore(wave, len_wave, pattern, len_pattern) << std::endl;
+    std::cout << "Time:" << float( clock () - begin_time ) /  CLOCKS_PER_SEC << std::endl;
     return 0;
     }
