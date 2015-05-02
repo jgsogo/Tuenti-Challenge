@@ -14,13 +14,13 @@ struct DataChunk {
     double mean;
     };
 
-std::pair<double, int> crosscorr(const DataChunk& x, const DataChunk& y) {
+std::pair<double, int> crosscorr(const DataChunk& x, const DataChunk& y, int pattern_offset) {
     //! Calculate the denominator (product of standard deviations)
     double denom = sqrt(x.sum_cuadratic_diff * y.sum_cuadratic_diff);
     //! Calculate the correlation series
     std::pair<double, int> best_xcorr = std::make_pair(0.0, 0);
 
-    for (int delay = 0; delay < (y.size - x.size + 1); ++delay) {
+    for (int delay = pattern_offset; delay < (y.size - x.size + 1); ++delay) {
         double xySum = 0.0;
         for (int i = 0; i < x.size; ++i) {
             xySum += (x.data[i] - x.mean) * y.deviations[i+delay];
@@ -35,7 +35,7 @@ std::pair<double, int> crosscorr(const DataChunk& x, const DataChunk& y) {
     }
 
 double findScore(const double* wave, int waveSize, const double* pattern, int patternSize){
-    double score = 0.0;
+    std::pair<double, int> score = std::make_pair(0.0, 0);
     int minSubvectorLength = 2;
 
     // Precompute data for pattern
@@ -62,49 +62,51 @@ double findScore(const double* wave, int waveSize, const double* pattern, int pa
             algún cálculo?
     */
     
+    std::pair<int, int> offset; // <wave,pattern> offset.
     int maxSubvectorLength = std::min(waveSize, patternData.size);
     for (int subvectorLength = maxSubvectorLength; subvectorLength>=minSubvectorLength; --subvectorLength) {
         const clock_t begin_time = clock();
-        //std::cout << "Length: " << subvectorLength << " -> " << minSubvectorLength << " (best_score=" << score << ")" \
-        //          << " --- " << float( clock () - begin_time ) /  CLOCKS_PER_SEC << std::endl;
+
         // All these xcorr will be computed for the same chunk length
         DataChunk xData;
         xData.size = subvectorLength;
-        xData.sum = std::accumulate(wave, wave+subvectorLength, 0.0);
-        xData.sum2 = std::inner_product(wave, wave+subvectorLength, wave, 0.0);
+        xData.sum = std::accumulate(wave+offset.first, wave+subvectorLength+offset.first, 0.0);
+        xData.sum2 = std::inner_product(wave+offset.first, wave+subvectorLength+offset.first, wave+offset.first, 0.0);
         double best_xcorr = 0.0;
-        for(int subvectorStart=0; subvectorStart <= waveSize - minSubvectorLength; ++subvectorStart) {
-            if (subvectorLength <= waveSize - subvectorStart) {
-                xData.data = &(wave[subvectorStart]);
-                xData.mean = xData.sum/xData.size;
-                xData.sum_cuadratic_diff = xData.sum2 - xData.size*xData.mean*xData.mean;
-                if (xData.sum_cuadratic_diff > xSumCuadraticDiff_THRESHOLD) {
+        std::cout << "Length: " << subvectorLength << " -> " << minSubvectorLength << " | " << std::endl;
+        for(int subvectorStart=offset.first; subvectorStart + subvectorLength <= waveSize; ++subvectorStart) {
+            xData.data = &(wave[subvectorStart]);
+            xData.mean = xData.sum/xData.size;
+            xData.sum_cuadratic_diff = xData.sum2 - xData.size*xData.mean*xData.mean;
+            if (xData.sum_cuadratic_diff > xSumCuadraticDiff_THRESHOLD) {
 
-                    auto xcorr = crosscorr(xData, patternData);
-                    if (xcorr.first*subvectorLength > score) {
-                        std::cout << "\tmu=" << xData.mean << "\tpi=" << xData.sum2 \
-                                  << "\tmu/pi=" << xData.sum*xData.mean/xData.sum2 \
-                                  << "\tpi-mu=" << xData.sum2 - xData.mean \
-                                  << "\tdelay=" << xcorr.second \
-                                  << "\tstart+delay=" << xcorr.second + subvectorStart \
-                                  << "\txcorr=" << xcorr.first \
-                                  << "\tscore=" << xcorr.first*subvectorLength << std::endl;
-                        
-                        }
-                    best_xcorr = std::max(best_xcorr, xcorr.first) ;
+                auto xcorr = crosscorr(xData, patternData, offset.second);
+                if (xcorr.first*subvectorLength > (score.first*score.second)) {
+                    offset.first = subvectorStart;// - xcorr.second;
+                    offset.second = xcorr.second;
+
+                    score = std::make_pair(xcorr.first, subvectorLength);
+                    std::cout << "Length: " << subvectorLength << " -> " << minSubvectorLength << " | ";
+                    std::cout << float( clock () - begin_time ) /  CLOCKS_PER_SEC << " | ";
+                    std::cout << "\tdelay=" << xcorr.second \
+                              << "\tstart=" << subvectorStart \
+                              << "\tstart-delay=" << subvectorStart - xcorr.second \
+                              << "\txcorr=" << xcorr.first \
+                              << "\tscore=" << score.first*score.second << std::endl;
+                    
                     }
-                
-                //std::cout << "\t media: " << xData.sum/xData.size << "\t" << xcorr << std::endl;
-                // Update values of sum and sum^2
-                xData.sum += wave[subvectorStart+subvectorLength] - wave[subvectorStart];
-                xData.sum2 += wave[subvectorStart+subvectorLength]*wave[subvectorStart+subvectorLength] - wave[subvectorStart]*wave[subvectorStart];
+                best_xcorr = std::max(best_xcorr, xcorr.first) ;
                 }
+                
+            // Update values of sum and sum^2
+            xData.sum += wave[subvectorStart+subvectorLength] - wave[subvectorStart];
+            xData.sum2 += wave[subvectorStart+subvectorLength]*wave[subvectorStart+subvectorLength] - wave[subvectorStart]*wave[subvectorStart];
             }
-        score = std::max(score, best_xcorr*subvectorLength);
-        minSubvectorLength = ceil(score * patternData.size/subvectorLength);
-        std::cout << "Length: " << subvectorLength << " -> " << minSubvectorLength << " (best_score=" << score << ")" \
-                  << " --- " << float( clock () - begin_time ) /  CLOCKS_PER_SEC << std::endl;
+        std::cout << "<<< best_xcorr=" << best_xcorr << std::endl;
+
+        //score = std::max(score.first*score.second, best_xcorr*subvectorLength);
+        minSubvectorLength = ceil(score.first*score.second / std::max(score.first*2, 0.0));// patternData.size/subvectorLength);
         }
 
-    return score;
+    return score.first*score.second;
     }
