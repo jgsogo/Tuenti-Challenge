@@ -28,7 +28,6 @@ std::pair<double, int> crosscorr(const DataChunk& x, const DataChunk& y, int pat
         if (xySum > best_xcorr.first) {
             best_xcorr = std::make_pair(xySum, delay);
             }
-        //best_xcorr = std::max(best_xcorr, xySum / denom);
         }
     return std::make_pair(best_xcorr.first/denom, best_xcorr.second);
     }
@@ -59,8 +58,8 @@ double findScore(const double* wave, int waveSize, const double* pattern, int pa
             algún cálculo?
     */
     
-    std::pair<int, int> offset; // <wave,pattern> offset.
-    int maxSubvectorLength = std::min(waveSize, patternData.size);
+    std::pair<int, int> offset = std::make_pair(0,0); // <wave,pattern> offset.
+    int maxSubvectorLength = std::min(waveSize-offset.first, patternData.size-offset.second);
     for (int subvectorLength = maxSubvectorLength; subvectorLength>=minSubvectorLength; --subvectorLength) {
         const clock_t begin_time = clock();
 
@@ -70,7 +69,7 @@ double findScore(const double* wave, int waveSize, const double* pattern, int pa
         xData.sum = std::accumulate(wave+offset.first, wave+subvectorLength+offset.first, 0.0);
         xData.sum2 = std::inner_product(wave+offset.first, wave+subvectorLength+offset.first, wave+offset.first, 0.0);
         double max_expected_xcorr = 0.0;
-        std::cout << "Length: " << subvectorLength << " -> " << minSubvectorLength << " | ";
+        //std::cout << "Length: " << subvectorLength << " -> " << minSubvectorLength << " | ";
         for(int subvectorStart=offset.first; subvectorStart + subvectorLength <= waveSize; ++subvectorStart) {
             xData.data = &(wave[subvectorStart]);
             xData.mean = xData.sum/xData.size;
@@ -83,30 +82,27 @@ double findScore(const double* wave, int waveSize, const double* pattern, int pa
                     offset.first = subvectorStart;// - xcorr.second;
                     offset.second = xcorr.second;
                     score = std::make_pair(xcorr.first, subvectorLength);
-                    
+                    /*
                     std::cout << std::endl << "\tdelay=" << xcorr.second \
                               << "\tstart=" << subvectorStart \
                               << "\tstart-delay=" << subvectorStart - xcorr.second \
                               << "\txcorr=" << xcorr.first \
-                              << "\tscore=" << score.first*score.second;
-                    
+                              << "\tscore=" << std::fixed << std::setprecision(4) << score.first*score.second;
+                    */
                     }
                 
-                max_expected_xcorr = (xcorr.first + score.first);
+                max_expected_xcorr = (xcorr.first + score.first)/2.; // TODO: Guarantees?
                 }
                 
             // Update values of sum and sum^2
             xData.sum += wave[subvectorStart+subvectorLength] - wave[subvectorStart];
             xData.sum2 += wave[subvectorStart+subvectorLength]*wave[subvectorStart+subvectorLength] - wave[subvectorStart]*wave[subvectorStart];
             }
-        std::cout << " | " << float( clock () - begin_time ) /  CLOCKS_PER_SEC << " | " << std::endl;
-        //std::cout << "<<< best_xcorr=" << best_xcorr << std::endl;
+        //std::cout << " | " << float( clock () - begin_time ) /  CLOCKS_PER_SEC << " | " << std::endl;
 
-        //score = std::max(score.first*score.second, best_xcorr*subvectorLength);
-        if (score.first != 0) {
-            //minSubvectorLength = ceil(score.first*score.second*patternData.size/subvectorLength);// patternData.size/subvectorLength);
-            minSubvectorLength = ceil(score.first*score.second)/(max_expected_xcorr);// patternData.size/subvectorLength);
-            }
+        minSubvectorLength = ceil(score.first*score.second); // X-Correlation value cannot be greater than 1 (I have a lower bound for the size of the wave to compare!)
+        auto confidence_factor = (1-subvectorLength/(double)patternData.size);
+        minSubvectorLength = minSubvectorLength*confidence_factor/max_expected_xcorr;
         }
 
     return score.first*score.second;

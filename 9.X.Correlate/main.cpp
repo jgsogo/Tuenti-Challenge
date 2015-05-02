@@ -9,7 +9,19 @@
 #include "findScore.hpp"
 
 /* Tuenti Challenge #9: X Correlate
+*   
+*   Optimizations
+*       - Some corrections over the source for performance
+*       - Update mean value and sum_squares value instead of computing it all again
+*       - Compute the offset between the two series, use it to constraint search space
+*       - Compute min-possible length for the wave chunk to get a lower_bound for the search
 *
+*
+*   ..pero SIGUE SIENDO MUY LENTO!!
+*       - Intentar acotar la búsqueda en el delay. No permitir que haga todos los delays... sólo ¿cuántos?
+*
+*   ... la otra opción es tirar de heurísticas; utilizar algún greedy algorithm, un hill climb y listo. Pero
+*       he querido centrarme antes en la optimización del algoritmo, no en la búsqueda de otro :/
 */
 
 
@@ -47,12 +59,8 @@ int main (int argc, char *argv[]) {
         }
     
     // Compute
-    
-    //for(std::uint16_t i=0; i<10000; ++i)
-    //    findScore(wave, len_wave, pattern, len_pattern);
-    
-    const clock_t begin_time = clock();    
+    //const clock_t begin_time = clock();    
     std::cout << std::fixed << std::setprecision(4) << findScore(wave, len_wave, pattern, len_pattern) << std::endl;
-    std::cout << "Time:" << float( clock () - begin_time ) /  CLOCKS_PER_SEC << std::endl;
+    //std::cout << "Time:" << float( clock () - begin_time ) /  CLOCKS_PER_SEC << std::endl;
     return 0;
     }
