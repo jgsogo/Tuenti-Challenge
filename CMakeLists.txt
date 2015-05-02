@@ -16,6 +16,7 @@ set( Boost_LIBRARY_DIR ${BOOST_ROOT}/stage/lib CACHE INTERNAL "Internal")
 #add_subdirectory("6.Airscrews")
 #add_subdirectory("7.The.Perfect.Larry.Matching.Algorithm")
 #add_subdirectory("8.Alchemy.Pot")
-add_subdirectory("9.X.Correlate")
+#add_subdirectory("9.X.Correlate")
+add_subdirectory("11.Crazy.Tower")
 
 
