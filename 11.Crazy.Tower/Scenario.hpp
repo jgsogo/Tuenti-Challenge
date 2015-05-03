@@ -9,6 +9,12 @@
 #include "Room.hpp"
 #include "Hero.hpp"
 
+#if(VERBOSE)
+    #define DEBUGGING(msg) msg;
+#else
+    #define DEBUGGING(msg) void(0);
+#endif
+
 
 struct Scenario {
     std::size_t id;
@@ -18,14 +24,18 @@ struct Scenario {
 
     Scenario(const std::size_t& id) : id(id) {};
     std::size_t solve(const std::size_t& modulo) {
+        DEBUGGING(std::cout << std::endl << "============ Scenario " << id << " START ============" << std::endl)
         Hero hero(stamina, stamina, modulo);
         pRoom start = rooms["start"];
-        return Hero::visit(start, hero);
+        auto solutions = Hero::visit(start, hero);
+        DEBUGGING(std::cout << "Found [" << solutions << "] solutions" << std::endl)
+        DEBUGGING(std::cout << std::endl << "============ Scenario " << id << " END ============" << std::endl)
+        return solutions;
         };
     };
 
 
-std::vector<Scenario> parse_scenarios(const std::string& filename) {
+std::vector<Scenario> parse_scenarios(const std::string& filename, const std::size_t& max_to_read = std::numeric_limits<std::size_t>::max()) {
     std::ifstream file(filename.c_str());
     if (!file.is_open()) {
         std::cerr << "Cannot parse scenarios file: '" << filename << "'" << std::endl;
@@ -36,7 +46,7 @@ std::vector<Scenario> parse_scenarios(const std::string& filename) {
 
     std::string line;
     std::getline(file, line);
-    auto n_scenarios = std::stoi(line.c_str());
+    auto n_scenarios = std::min(max_to_read, std::stoul(line.c_str()));
     ret.reserve(n_scenarios);
 
     auto i_scenario = 0;
@@ -75,7 +85,7 @@ std::vector<Scenario> parse_scenarios(const std::string& filename) {
                 it_room_2->upstairs.insert(std::make_pair(it_room->id, stairs));
                 }
             }
-        if (i_scenario > 3) {break;}
+        //if (i_scenario > 3) {break;}
         }
 
     return ret;
