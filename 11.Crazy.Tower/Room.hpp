@@ -11,11 +11,12 @@
 #include <set>
 #include <unordered_map>
 
-// Structs to store data about the world
+// Structs and definitions to store data about the world
 typedef std::string room_id;
 
 struct Stairs;
 typedef std::shared_ptr<Stairs> pStairs;
+
 
 struct Room {
     bool is_exit;
@@ -41,3 +42,27 @@ struct Stairs {
     Stairs(const Stairs& other) : stamina(other.stamina), keys(other.keys) {};
 
     };
+
+
+/* Print functions */   
+std::ostream& operator<< (std::ostream& os, const Stairs& stairs) {
+    os << stairs.down->id << " " << stairs.keys << " " << stairs.stamina;
+    return os;
+    };
+std::ostream& operator<< (std::ostream& os, const pStairs& p) {
+    os << *p;
+    return os;
+    };
+
+std::ostream& operator<< (std::ostream& os, const Room& room) {
+    os << room.id << " " << room.downstairs.size() << "\n";
+    for (auto it = room.downstairs.begin(); it!=room.downstairs.end(); ++it) {
+        os << *(it->second) << "\n";
+        }
+    return os;
+    };
+std::ostream& operator<< (std::ostream& os, const pRoom& p) {
+    os << *p;
+    return os;
+    };
+
