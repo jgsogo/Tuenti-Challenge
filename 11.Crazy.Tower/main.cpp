@@ -42,9 +42,9 @@ int main (int argc, char *argv[]) {
     // Read scenarios up to the one we are going to solve.
     auto scenarios = parse_scenarios("scenarios.txt", *std::max_element(cases.begin(), cases.end())+1);
  
-    //auto r = solve_scenario(scenarios[46], modulo);
-    //std::cout << "Scenario " << 46 << ": " << r << std::endl;
-    //return 0;
+    auto r = solve_scenario(scenarios[46], modulo);
+    std::cout << "Scenario " << 46 << ": " << r << std::endl;
+    return 0;
 
     // Parse input cases
     for (auto it = cases.begin(); it!=cases.end(); ++it) {

@@ -2,18 +2,27 @@
 #pragma once
 
 #include <cassert>
+#include <unordered_map>
 
 
 template <typename INT_TYPE = std::uint32_t>
 struct ModularArithmetic {
+    // Cache for modular inverse
+    static std::unordered_map<INT_TYPE, std::unordered_map<INT_TYPE, INT_TYPE>> modular_inverse_cache;
     // Implementation of modular arithmetic
     static INT_TYPE combinations(const INT_TYPE& m, const INT_TYPE& n, const INT_TYPE& modulus);
     static INT_TYPE multiply(const INT_TYPE& lhs, const INT_TYPE& rhs, const INT_TYPE& modulus);
+    static INT_TYPE modular_inverse(const INT_TYPE& n, const INT_TYPE& modulus);
+    static INT_TYPE division(const INT_TYPE& dividend, const INT_TYPE& divisor, const INT_TYPE& modulus);
     static INT_TYPE sum(const INT_TYPE& lhs, const INT_TYPE& rhs, const INT_TYPE& modulus);
     };
+template <typename INT_TYPE>
+std::unordered_map<INT_TYPE, std::unordered_map<INT_TYPE, INT_TYPE>> ModularArithmetic<INT_TYPE>::modular_inverse_cache;
 
-/* Arithmetics specialization for type 2^32 */
-// Using 2^64 to store the results, I will always be able to multiply two numbers: (2^32-1)^2 < (2^64 -1)    
+/* Arithmetics specialization for type 2^32 
+* Using 2^64 to store the results, I will always be able to multiply two numbers: (2^32-1)^2 < (2^64 -1)    
+*
+*/
 template <>
 std::uint32_t ModularArithmetic<std::uint32_t>::multiply(const std::uint32_t& lhs, const std::uint32_t& rhs, const std::uint32_t& modulo) {
     auto product = static_cast<std::uint64_t>(lhs)*static_cast<std::uint64_t>(rhs);
@@ -26,9 +35,44 @@ std::uint32_t ModularArithmetic<std::uint32_t>::sum(const std::uint32_t& lhs, co
     return (sum%modulo);
     }
 
-std::uint32_t division(const std::uint32_t& lhs, const std::uint32_t& rhs, const std::uint32_t& modulo) {
-    auto cocient = static_cast<std::uint64_t>(lhs) / static_cast<std::uint64_t>(rhs);
-    return (cocient%modulo);
+template <>
+std::uint32_t ModularArithmetic<std::uint32_t>::modular_inverse(const std::uint32_t& n, const std::uint32_t& modulo) {
+    auto modulo_map = modular_inverse_cache.emplace(modulo, std::unordered_map<std::uint32_t, std::uint32_t>());
+    auto found = modulo_map.first->second.emplace(n, 0);
+    if (!found.second) {
+        return found.first->second;
+        }
+    auto number = n%modulo;
+    std::uint32_t inv_divisor = 0;
+    // TODO: Check 'n' and 'modulo' to be coprimes (always true if 'modulo' is prime and 'n<modulo')
+    // Naïve implementation
+    for(auto i=1; i<modulo; i++) {
+        if (ModularArithmetic<std::uint32_t>::multiply(number, i, modulo) == 1) {
+            inv_divisor = i;
+            break;
+            }
+        }
+    // Extended_Euclidean_algorithm: http://en.wikipedia.org/wiki/Extended_Euclidean_algorithm#Computing_multiplicative_inverses_in_modular_structures
+    found.first->second = inv_divisor;
+    return inv_divisor;
+    }
+
+template <>
+std::uint32_t ModularArithmetic<std::uint32_t>::division(const std::uint32_t& dividend, const std::uint32_t& divisor, const std::uint32_t& modulo) {
+    // ! There is no division in modular arithmetics... Need to use "modular inverse"
+    auto inv_divisor = ModularArithmetic<std::uint32_t>::modular_inverse(divisor, modulo);
+    return ModularArithmetic<std::uint32_t>::multiply(dividend, inv_divisor, modulo);
+
+/*
+function inverse(x, m)
+
+    a, b, u := 0, m, 1
+    while x > 0
+        q, r := divide(b, x)
+        x, a, b, u := b % x, u, x, a - q * u
+    if b == 1 return a % m
+    error "must be coprime"
+*/
     }
 
 template <>
@@ -42,7 +86,7 @@ std::uint32_t ModularArithmetic<std::uint32_t>::combinations(const std::uint32_t
             ret = ModularArithmetic<std::uint32_t>::multiply(ret, i, modulo);
             }
         for(auto i=std::min(n, m-n); i>1; --i) {
-            ret = division(ret, i, modulo);
+            ret = ModularArithmetic<std::uint32_t>::division(ret, i, modulo);
             }
         }
     return ret;
