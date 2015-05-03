@@ -3,6 +3,7 @@
 
 #include <cassert>
 
+
 template <typename INT_TYPE = std::uint32_t>
 struct ModularArithmetic {
     // Implementation of modular arithmetic
@@ -15,26 +16,33 @@ struct ModularArithmetic {
 // Using 2^64 to store the results, I will always be able to multiply two numbers: (2^32-1)^2 < (2^64 -1)    
 template <>
 std::uint32_t ModularArithmetic<std::uint32_t>::multiply(const std::uint32_t& lhs, const std::uint32_t& rhs, const std::uint32_t& modulo) {
-    return (lhs*rhs)%modulo;
+    auto product = static_cast<std::uint64_t>(lhs)*static_cast<std::uint64_t>(rhs);
+    return (product%modulo);
     }
 
 template <>
 std::uint32_t ModularArithmetic<std::uint32_t>::sum(const std::uint32_t& lhs, const std::uint32_t& rhs, const std::uint32_t& modulo) {
-    return (lhs%modulo)+(rhs%modulo);
+    auto sum = static_cast<std::uint64_t>(lhs)+static_cast<std::uint64_t>(rhs);
+    return (sum%modulo);
     }
-    
+
+std::uint32_t division(const std::uint32_t& lhs, const std::uint32_t& rhs, const std::uint32_t& modulo) {
+    auto cocient = static_cast<std::uint64_t>(lhs) / static_cast<std::uint64_t>(rhs);
+    return (cocient%modulo);
+    }
+
 template <>
 std::uint32_t ModularArithmetic<std::uint32_t>::combinations(const std::uint32_t& m, const std::uint32_t& n, const std::uint32_t& modulo) {
     // Combinations of n elements from m::  C_{m,n} = m!/(n!(m-n)!)
     assert(m>=n);
-    std::uint64_t ret = 1LL;
+    std::uint32_t ret = 1LL;
     if (n!=0) {
         auto max_ = std::max(n, m-n);
         for(auto i=m; i>max_; --i) {
             ret = ModularArithmetic<std::uint32_t>::multiply(ret, i, modulo);
             }
         for(auto i=std::min(n, m-n); i>1; --i) {
-            ret /= i;
+            ret = division(ret, i, modulo);
             }
         }
     return ret;

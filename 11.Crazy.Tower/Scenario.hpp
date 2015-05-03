@@ -23,7 +23,7 @@ struct Scenario {
     std::unordered_map<room_id, pRoom> rooms;
 
     Scenario(const std::size_t& id) : id(id) {};
-    std::size_t solve(const std::size_t& modulo) {
+    std::uint32_t solve(const std::uint32_t& modulo) {
         DEBUGGING(std::cout << std::endl << "============ Scenario " << id << " START ============" << std::endl)
         DEBUGGING(rename_rooms())
         Hero hero(stamina, stamina, modulo);
@@ -60,7 +60,7 @@ std::vector<Scenario> parse_scenarios(const std::string& filename, const std::si
 
     auto i_scenario = 0;
     while(i_scenario++<n_scenarios && std::getline(file, line)) {
-        auto it =  ret.insert(ret.end(), Scenario(i_scenario));
+        auto it =  ret.insert(ret.end(), Scenario(i_scenario-1));
         
         // Parse scenario i
         std::size_t n_rooms;

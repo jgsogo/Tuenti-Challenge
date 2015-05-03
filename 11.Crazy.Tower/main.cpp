@@ -7,7 +7,7 @@
 *
 */
 
-#define VERBOSE 1
+#define VERBOSE 0
 
 #include "Room.hpp"
 #include "Scenario.hpp"
@@ -40,9 +40,11 @@ int main (int argc, char *argv[]) {
     const std::size_t modulo = 1000000007;
 
     // Read scenarios up to the one we are going to solve.
-    auto scenarios = parse_scenarios("scenarios.txt", *std::max_element(cases.begin(), cases.end()));
+    auto scenarios = parse_scenarios("scenarios.txt", *std::max_element(cases.begin(), cases.end())+1);
  
-    solve_scenario(scenarios[9], modulo); return 0; // To debug one case.
+    //auto r = solve_scenario(scenarios[46], modulo);
+    //std::cout << "Scenario " << 46 << ": " << r << std::endl;
+    //return 0;
 
     // Parse input cases
     for (auto it = cases.begin(); it!=cases.end(); ++it) {
