@@ -25,12 +25,21 @@ struct Scenario {
     Scenario(const std::size_t& id) : id(id) {};
     std::size_t solve(const std::size_t& modulo) {
         DEBUGGING(std::cout << std::endl << "============ Scenario " << id << " START ============" << std::endl)
+        DEBUGGING(rename_rooms())
         Hero hero(stamina, stamina, modulo);
         pRoom start = rooms["start"];
         auto solutions = Hero::visit(start, hero);
         DEBUGGING(std::cout << "Found [" << solutions << "] solutions" << std::endl)
         DEBUGGING(std::cout << std::endl << "============ Scenario " << id << " END ============" << std::endl)
         return solutions;
+        };
+    void rename_rooms() {
+        // In order to debug, its easier to have meaningful names than hashes
+        std::size_t i = 0;
+        for (auto it = rooms.begin(); it!=rooms.end(); ++it, i++) {
+            std::stringstream ss; ss << "room " << i;
+            it->second->id = ss.str();
+            }
         };
     };
 
@@ -81,8 +90,7 @@ std::vector<Scenario> parse_scenarios(const std::string& filename, const std::si
                 stairs->up = it_room;
 
                 // Connect
-                it_room->downstairs.insert(std::make_pair(it_room_2->id, stairs));
-                it_room_2->upstairs.insert(std::make_pair(it_room->id, stairs));
+                it_room->downstairs.push_back(stairs);
                 }
             }
         //if (i_scenario > 3) {break;}

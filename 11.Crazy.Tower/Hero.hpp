@@ -49,22 +49,22 @@ struct Hero {
     static std::vector<RoomOption> generate(const pRoom& room, const Hero& hero) {
         std::vector<RoomOption> options;
         for (auto it = room->downstairs.begin(); it!=room->downstairs.end(); ++it) {
-            DEBUGGING(std::cout << "\t stair to '" << it->second->down->id << "' (keys='" << it->second->keys << "' stamina='" << it->second->stamina << "')" << std::endl;)
+            DEBUGGING(std::cout << "\t stair to '" << (*it)->down->id << "' (keys='" << (*it)->keys << "' stamina='" << (*it)->stamina << "')" << std::endl;)
             // Generate options according to each stairs
             //  - Can I get all the keys?
-            auto possible = (it->second->keys <= room->downstairs.size());
+            auto possible = ((*it)->keys <= room->downstairs.size());
             DEBUGGING(if (!possible) {std::cout << "\t\t not enough KEYS!" << std::endl;})
             //  - Can I reach all the stamina I need?
-            possible &= (it->second->stamina <= hero.max_stamina);
+            possible &= ((*it)->stamina <= static_cast<int>(hero.max_stamina));
             DEBUGGING(if (!possible) {std::cout << "\t\t not enough MAX_STAMINA!" << std::endl;})
             //  - Can I get all the stamina needed?
-            int needed = it->second->stamina - hero.stamina;
+            int needed = (*it)->stamina - hero.stamina;
             possible &= (needed <= static_cast<int>(room->downstairs.size()));
             DEBUGGING(if (!possible) {std::cout << "\t\t not enough minions to get '" << needed << "' STAMINA!" << std::endl;})
             if (possible) {
-                auto multiplicity = ModularArithmetic<std::uint32_t>::combinations(room->downstairs.size()-1, std::max<int>(0, it->second->keys-1), hero.modulo);
-                options.insert(options.end(), RoomOption(it->second, multiplicity));
-                DEBUGGING(std::cout << "\t\t >> " << multiplicity << " ways (C_{" << room->downstairs.size()-1 << ", " << std::max<int>(0, it->second->keys-1) << "})" << std::endl)
+                auto multiplicity = ModularArithmetic<std::uint32_t>::combinations(room->downstairs.size()-1, std::max<int>(0, (*it)->keys-1), hero.modulo);
+                options.insert(options.end(), RoomOption(*it, multiplicity));
+                DEBUGGING(std::cout << "\t\t >> " << multiplicity << " ways (C_{" << room->downstairs.size()-1 << ", " << std::max<int>(0, (*it)->keys-1) << "})" << std::endl)
                 }
         
             }

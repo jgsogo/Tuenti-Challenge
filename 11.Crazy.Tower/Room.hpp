@@ -21,8 +21,7 @@ typedef std::shared_ptr<Stairs> pStairs;
 struct Room {
     bool is_exit;
     room_id id;
-    std::unordered_map<room_id, pStairs> downstairs;
-    std::unordered_map<room_id, pStairs> upstairs;
+    std::vector<pStairs> downstairs;
     
     Room(const room_id& id) : id(id) {
         is_exit = (id.compare("exit")==0);
@@ -57,7 +56,7 @@ std::ostream& operator<< (std::ostream& os, const pStairs& p) {
 std::ostream& operator<< (std::ostream& os, const Room& room) {
     os << room.id << " " << room.downstairs.size() << "\n";
     for (auto it = room.downstairs.begin(); it!=room.downstairs.end(); ++it) {
-        os << *(it->second) << "\n";
+        os << *(it) << "\n";
         }
     return os;
     };
