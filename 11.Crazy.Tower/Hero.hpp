@@ -34,6 +34,16 @@ struct Hero {
             DEBUGGING(std::cout << "\tEXIT!" << std::endl)
             return 1;
             }
+
+        // Check if I have already been here
+        if (room->min_stamina_for_solutions > hero.stamina) {
+            return 0;
+            }
+        auto sol_cache = room->solutions.insert(std::make_pair(hero.stamina, 0));
+        if (!sol_cache.second) { // It is already cached!
+            return sol_cache.first->second;
+            }
+
         // Otherwise, compute options
         auto stamina = hero.stamina; // 'hero' has this level of stamina on arrival
         auto options = Hero::generate(room, hero);
@@ -43,6 +53,13 @@ struct Hero {
             auto new_solutions = it->exec(hero, stamina);
             successful_options = ModularArithmetic<std::uint32_t>::sum(successful_options, new_solutions, hero.modulo);
             }
+
+        // Update cache
+        if (!successful_options) {
+            room->min_stamina_for_solutions = std::max(room->min_stamina_for_solutions, stamina);
+            }
+        sol_cache.first->second = successful_options;
+        
         return successful_options;
         };
 

@@ -23,8 +23,12 @@ struct Room {
     room_id id;
     std::vector<pStairs> downstairs;
     
+    std::size_t min_stamina_for_solutions;
+    std::map<std::size_t, std::uint32_t> solutions;
+
     Room(const room_id& id) : id(id) {
         is_exit = (id.compare("exit")==0);
+        min_stamina_for_solutions = 0;
         };
     };
 typedef std::shared_ptr<Room> pRoom;
