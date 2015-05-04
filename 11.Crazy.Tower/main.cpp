@@ -12,9 +12,11 @@
 #include "Room.hpp"
 #include "Scenario.hpp"
 
+#include <boost/thread/thread.hpp>
 
-std::size_t solve_scenario(Scenario& scenario, const std::size_t& modulo) {
-    return scenario.solve(modulo);
+
+void solve_scenario(Scenario& scenario, const std::size_t& modulo, std::uint32_t& solution) {
+    solution = scenario.solve(modulo);
     };
 
 
@@ -31,22 +33,33 @@ int main (int argc, char *argv[]) {
         }
 
     // Read cases
-    std::vector<std::size_t> cases;
+    std::vector<std::pair<std::size_t, std::uint32_t>> cases;
     std::size_t scenario;
+    std::size_t max_scenario = 0;
     while( file >> scenario) {
-        cases.push_back(scenario);
+        cases.push_back(std::make_pair(scenario, 0));
+        max_scenario = std::max(max_scenario, scenario);
         }
 
     const std::size_t modulo = 1000000007;
 
     // Read scenarios up to the one we are going to solve.
-    auto scenarios = parse_scenarios("scenarios.txt", *std::max_element(cases.begin(), cases.end())+1);
+    auto scenarios = parse_scenarios("scenarios.txt", max_scenario+1);
  
-    // Parse input cases
-    for (auto it = cases.begin(); it!=cases.end(); ++it) {
-        std::cout << "Scenario " << (*it) << ": " << std::flush << solve_scenario(scenarios[(*it)], modulo) << std::endl;
+    // Parallelize
+    std::vector<boost::thread*> threads;
+    std::size_t init_case = 0;
+    for (auto i = init_case; i<max_scenario+1;++i) {
+        auto job = new boost::thread(solve_scenario, scenarios[i], modulo, boost::ref(cases[i].second));
+        threads.push_back(job);
         }
 
+    // Wait threads to join and dump (in order)
+    auto it_case = cases.begin()+init_case;
+    for (auto it = threads.begin(); it!=threads.end(); ++it, ++it_case) {
+        (*it)->join();
+        std::cout << "Scenario " << it_case->first << ": " << std::flush << it_case->second << std::endl;
+        }
     return 0;
     }
 

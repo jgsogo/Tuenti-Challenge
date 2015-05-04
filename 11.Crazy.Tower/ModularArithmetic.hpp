@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <unordered_map>
+#include <tuple>
 
 
 template <typename INT_TYPE = std::uint32_t>
@@ -37,12 +38,14 @@ std::uint32_t ModularArithmetic<std::uint32_t>::sum(const std::uint32_t& lhs, co
 
 template <>
 std::uint32_t ModularArithmetic<std::uint32_t>::modular_inverse(const std::uint32_t& n, const std::uint32_t& modulo) {
-    auto modulo_map = modular_inverse_cache.emplace(modulo, std::unordered_map<std::uint32_t, std::uint32_t>());
-    auto found = modulo_map.first->second.emplace(n, 0);
+    /*
+    auto modulo_map = modular_inverse_cache.emplace(std::make_pair(modulo, std::unordered_map<std::uint32_t, std::uint32_t>()));
+    auto found = modulo_map.first->second.emplace(std::make_pair(n, 0));
     if (!found.second) {
         return found.first->second;
         }
     auto number = n%modulo;
+    */
     std::uint32_t inv_divisor = 0;
     // TODO: Check 'n' and 'modulo' to be coprimes (always true if 'modulo' is prime and 'n<modulo')
     // Naïve implementation
@@ -65,7 +68,7 @@ std::uint32_t ModularArithmetic<std::uint32_t>::modular_inverse(const std::uint3
     if (t<0) { t = t + modulo;}
     inv_divisor = t; 
 
-    found.first->second = inv_divisor;
+    //found.first->second = inv_divisor;
     return inv_divisor;
     }
 

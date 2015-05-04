@@ -4,9 +4,11 @@ project (Tuenti_Challenge)
 
 # In case we need boost
 set(BOOST_ROOT ${BOOST_ROOT} CACHE PATH "Path to boost on the system" )
-find_package(Boost REQUIRED)
+find_package(Boost COMPONENTS thread date_time system chrono REQUIRED)
 set( Boost_INCLUDE_DIRS ${BOOST_ROOT} CACHE INTERNAL "Internal")
 set( Boost_LIBRARY_DIR ${BOOST_ROOT}/stage/lib CACHE INTERNAL "Internal")
+set(Boost_USE_STATIC_LIBS ON CACHE INTERNAL "Internal")
+set(Boost_USE_MULTITHREADED ON CACHE INTERNAL "Internal")
 
 #add_subdirectory("1.The.Buffer")
 #add_subdirectory("2.Almost.prime")

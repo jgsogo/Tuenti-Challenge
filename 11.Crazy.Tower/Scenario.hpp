@@ -55,7 +55,7 @@ std::vector<Scenario> parse_scenarios(const std::string& filename, const std::si
 
     std::string line;
     std::getline(file, line);
-    auto n_scenarios = std::min(max_to_read, std::stoul(line.c_str()));
+    auto n_scenarios = (std::min)(max_to_read, std::stoull(line.c_str()));
     ret.reserve(n_scenarios);
 
     auto i_scenario = 0;
